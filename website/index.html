@@ -643,34 +643,37 @@ $ git push origin main
     }
 
     async function generateCommand() {
-      try {
-        const buildCommand = document.getElementById('buildCommand').value || 'npm run build';
-        const branch = document.getElementById('branch').value || 'main';
-        const arnsName = document.getElementById('arnsName').value || '';
-        const undername = document.getElementById('undername').value || '';
-        const antProcess = document.getElementById('antProcesses').value || '';
+  try {
+    const buildCommand = document.getElementById('buildCommand').value || 'npm run build';
+    const branch = document.getElementById('branch').value || 'main';
+    const arnsName = document.getElementById('arnsName').value || '';
+    const undername = document.getElementById('undername').value || '';
+    const antProcess = document.getElementById('antProcesses').value || '';
 
-        // Generate random seed
-        const seedArray = window.crypto.getRandomValues(new Uint8Array(32));
-        walletSeed = btoa(String.fromCharCode.apply(null, seedArray));
+    // Generate random seed
+    const seedArray = window.crypto.getRandomValues(new Uint8Array(32));
+    walletSeed = btoa(String.fromCharCode.apply(null, seedArray));
 
-        // Generate command
-        generatedCommand = `npx perma-deploy-init --build "${buildCommand}" --branch "${branch}"${arnsName ? ` --arns "${arnsName}"` : ''}${undername ? ` --undername "${undername}"` : ''}${antProcess ? ` --ant-process "${antProcess}"` : ''} --seed "${walletSeed}"`;
+    // Generate installation and initialization commands
+    const installCommand = `npm install perma-deployV1`;
+    const initCommand = `npx perma-deploy-init --build "${buildCommand}" --branch "${branch}"${arnsName ? ` --arns "${arnsName}"` : ''}${undername ? ` --undername "${undername}"` : ''}${antProcess ? ` --ant-process "${antProcess}"` : ''} --seed "${walletSeed}"`;
+    
+    // Combine commands
+    generatedCommand = `# First install the package\n${installCommand}\n\n# Then initialize your project\n${initCommand}`;
 
-        // Update UI
-        document.getElementById('commandOutput').textContent = generatedCommand;
-        document.getElementById('seedOutput').textContent = `Base64 Seed: ${walletSeed}`;
-        document.getElementById('copyCommandBtn').style.display = 'block';
-        document.getElementById('copySeedBtn').style.display = 'block';
-      } catch (error) {
-        console.error('Error generating command:', error);
-        logDebug(`Error generating command: ${error.message}`);
-        document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
-        document.getElementById('status').textContent = `Error: ${error.message}`;
-        document.getElementById('status').className = 'status-message error';
-      }
-    }
-
+    // Update UI
+    document.getElementById('commandOutput').textContent = generatedCommand;
+    document.getElementById('seedOutput').textContent = `Base64 Seed: ${walletSeed}`;
+    document.getElementById('copyCommandBtn').style.display = 'block';
+    document.getElementById('copySeedBtn').style.display = 'block';
+  } catch (error) {
+    console.error('Error generating command:', error);
+    logDebug(`Error generating command: ${error.message}`);
+    document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+    document.getElementById('status').textContent = `Error: ${error.message}`;
+    document.getElementById('status').className = 'status-message error';
+  }
+}
     function copyCommand() {
       navigator.clipboard.writeText(generatedCommand)
         .then(() => alert('Command copied!'))
