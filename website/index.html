@@ -177,6 +177,18 @@
   </div>
 
   <!-- Load scripts in the correct order with proper error handling -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsSHA/3.3.0/sha.js" onerror="console.error('Failed to load jsSHA from local dist/sha.js');"></script>
+  <script>
+    // Store jsSHA immediately to protect from lockdown
+    const preservedJsSHA = window.jsSHA;
+    console.log('jsSHA initial check:', typeof preservedJsSHA !== 'undefined');
+    // Log if jsSHA changes later
+    setInterval(() => {
+      if (typeof window.jsSHA === 'undefined' && typeof preservedJsSHA !== 'undefined') {
+        console.warn('window.jsSHA was cleared after initial load');
+      }
+    }, 1000);
+  </script>
   <script src="https://unpkg.com/arweave@latest/bundles/web.bundle.min.js"></script>
   <script src="dist/ar-io-bundle.js"></script>
   <script src="dist/aoconnect-bundle.js" defer></script>
@@ -380,12 +392,150 @@
       if (!arweaveInstance) {
         arweaveInstance = Arweave.init({ host: 'arweave.net', port: 443, protocol: 'https' });
       }
+/**
+ * Generate a deterministic Arweave wallet from a seed string
+ * Works consistently in both browser and Node.js environments
+ * 
+ * Dependencies:
+ * - Browser: jssha (https://cdnjs.cloudflare.com/ajax/libs/jsSHA/3.3.0/sha.js)
+ * - Node: npm install jssha
+ * 
+ * @param {string} seed - The seed string to generate the wallet from
+ * @returns {Promise<Object>} - Object containing the JWK and wallet address
+ */
+ async function generateArweaveWallet(seed) {
+// Use preserved jsSHA to avoid lockdown issues
+let jsSHA = preservedJsSHA;
+      if (typeof window !== 'undefined') {
+        // Browser environment
+        if (typeof jsSHA !== 'function') {
+          logDebug('preservedJsSHA not found');
+          console.error('window.jsSHA status:', typeof window.jsSHA);
+          throw new Error('jsSHA not found. Please ensure the jsSHA library is loaded from dist/sha.js');
+        }
+        logDebug('jsSHA loaded successfully from preserved reference');
+      } else {
+        // Node.js environment
+        jsSHA = require('jssha');
+      }
+  
+  // Create a consistent SHA-256 hash of the seed
+  function sha256(data) {
+    const shaObj = new jsSHA('SHA-256', 'TEXT');
+    shaObj.update(data);
+    return hexToBytes(shaObj.getHash('HEX'));
+  }
+  
+  // Helper functions for consistent handling in both environments
+  function hexToBytes(hex) {
+    const bytes = [];
+    for (let i = 0; i < hex.length; i += 2) {
+      bytes.push(parseInt(hex.substring(i, i + 2), 16));
+    }
+    return new Uint8Array(bytes);
+  }
+  
+  function bytesToHex(bytes) {
+    return Array.from(bytes)
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  }
+  
+  function base64UrlEncode(bytes) {
+    let base64;
+    if (typeof window !== 'undefined') {
+      // Browser
+      base64 = btoa(Array.from(bytes).map(b => String.fromCharCode(b)).join(''));
+    } else {
+      // Node.js
+      base64 = Buffer.from(bytes).toString('base64');
+    }
+    // Convert to base64url format
+    return base64
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
+  }
+  
+  // Generate the initial seed hash
+  const seedHash = sha256(seed);
+  
+  // Function to get deterministic bytes from the seed hash
+  function getDeterministicBytes(length, index = 0) {
+    const result = new Uint8Array(length);
+    let bytesGenerated = 0;
+    
+    while (bytesGenerated < length) {
+      // Create a consistent hash source combining seed and index
+      const indexBytes = new Uint8Array(4);
+      indexBytes[0] = (index & 0xff);
+      indexBytes[1] = ((index >> 8) & 0xff);
+      indexBytes[2] = ((index >> 16) & 0xff);
+      indexBytes[3] = ((index >> 24) & 0xff);
       
-      // Generate wallet
-      const jwk = await arweaveInstance.wallets.generate();
+      // Combine seed hash and index
+      const dataToHash = bytesToHex(seedHash) + bytesToHex(indexBytes);
+      
+      // Generate hash using jsSHA
+      const shaObj = new jsSHA('SHA-256', 'HEX');
+      shaObj.update(dataToHash);
+      const hashHex = shaObj.getHash('HEX');
+      const currentHash = hexToBytes(hashHex);
+      
+      // Copy bytes from hash to result
+      const bytesToCopy = Math.min(currentHash.length, length - bytesGenerated);
+      for (let i = 0; i < bytesToCopy; i++) {
+        result[bytesGenerated + i] = currentHash[i];
+      }
+      
+      bytesGenerated += bytesToCopy;
+      index++;
+    }
+    
+    return result;
+  }
+  
+  // Create deterministic JWK
+  const jwk = {
+    kty: 'RSA',
+    e: 'AQAB', // Standard RSA exponent (65537)
+    n: base64UrlEncode(getDeterministicBytes(256, 1)),
+    d: base64UrlEncode(getDeterministicBytes(256, 2)),
+    p: base64UrlEncode(getDeterministicBytes(128, 3)),
+    q: base64UrlEncode(getDeterministicBytes(128, 4)),
+    dp: base64UrlEncode(getDeterministicBytes(128, 5)),
+    dq: base64UrlEncode(getDeterministicBytes(128, 6)),
+    qi: base64UrlEncode(getDeterministicBytes(128, 7))
+  };
+  
+  // Calculate wallet address by hashing the public key 'n'
+  // Decode base64url to get the raw bytes of n
+  const nBytes = hexToBytes(bytesToHex(getDeterministicBytes(256, 1)));
+  
+  // Hash the n value to get the owner
+  const shaObj = new jsSHA('SHA-256', 'UINT8ARRAY');
+  shaObj.update(nBytes);
+  const ownerBytes = hexToBytes(shaObj.getHash('HEX'));
+  
+  // Encode as base64url for the Arweave address
+  const address = base64UrlEncode(ownerBytes);
+  
+  // Return both the JWK and the wallet address
+  return {
+    jwk: jwk,
+    address: address
+  };
+}     
+// Generate wallet
+      const jwk = await generateArweaveWallet(seedBase64).then(wallet => {
+ console.log(wallet.address)
+ console.log(seedBase64)
+ // Now you can use this wallet with the Arweave library:
+ return wallet.jwk// const tx = await arweave.createTransaction({ ... }, wallet.jwk);
+});
       const walletAddress = await arweaveInstance.wallets.jwkToAddress(jwk);
       logDebug(`Generated new wallet address: ${walletAddress}`);
-
+console.log(walletAddress)
       // Updated command without npm install -g ao-deploy
       generatedCommand = `npx perma-deploy-init --build "${buildCommand}" --branch "${branch}"${arnsName ? ` --arns "${arnsName}"` : ''}${undername ? ` --undername "${undername}"` : ''} --seed "${seedBase64}"`;
 
