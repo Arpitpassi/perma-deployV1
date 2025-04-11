@@ -5,8 +5,6 @@ const path = require('path');
 const os = require('os');
 const yargs = require('yargs');
 const Arweave = require('arweave');
-const { execSync, exec } = require('child_process');
-const { ArweaveSigner, createData } = require('arbundles');
 
 async function main() {
   const argv = yargs
@@ -43,7 +41,7 @@ async function main() {
 
   // Initialize Arweave
   const arweave = Arweave.init({ host: 'arweave.net', port: 443, protocol: 'https' });
-  const wallet = await arweave.wallets.generate();
+  const wallet = await arweave.wallets.generate(); // Generate JWK
   const walletAddress = await arweave.wallets.jwkToAddress(wallet);
 
   // Save wallet to ~/.permaweb/<project-name>/wallet.json
@@ -53,7 +51,7 @@ async function main() {
   const permaDeployDir = path.join(process.cwd(), '.perma-deploy');
   if (!fs.existsSync(permaDeployDir)) fs.mkdirSync(permaDeployDir);
 
-  // Save config with additional AO-related fields
+  // Save config
   const config = {
     projectName,
     walletPath,
@@ -69,8 +67,12 @@ async function main() {
   // Set up pre-commit hook
   const hookScript = `#!/bin/sh\nnpx perma-deploy-deploy\n`;
   const hookPath = path.join(process.cwd(), '.git', 'hooks', 'pre-commit');
-  fs.writeFileSync(hookPath, hookScript);
-  fs.chmodSync(hookPath, '755');
+  if (fs.existsSync(path.join(process.cwd(), '.git'))) {
+    fs.writeFileSync(hookPath, hookScript);
+    fs.chmodSync(hookPath, '755');
+  } else {
+    console.warn('Warning: No .git directory found. Skipping pre-commit hook setup.');
+  }
 
   console.log(`\nSetup complete! Wallet saved to: ${walletPath}`);
   console.log(`Wallet address: **${walletAddress}**`);

@@ -2,13 +2,11 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process'); // Still needed for build and git commands
+const { execSync } = require('child_process');
 const Arweave = require('arweave');
 const { TurboFactory } = require('@ardrive/turbo-sdk');
 const yargs = require('yargs');
 const { hideBin } = require('yargs/helpers');
-const os = require('os');
-const { message, createDataItemSigner } = require('@permaweb/aoconnect'); // New dependency
 
 // Function to retrieve commit hash
 function getCommitHash() {
@@ -32,7 +30,12 @@ async function uploadFile(filePath, dryRun, turbo, contentType) {
       fileStreamFactory: () => fs.createReadStream(filePath),
       fileSizeFactory: () => fs.statSync(filePath).size,
       signal: AbortSignal.timeout(10_000),
-      dataItemOpts: { tags: [{ name: 'Content-Type', value: contentType }] }
+      dataItemOpts: {
+        tags: [
+          { name: 'Content-Type', value: contentType },
+          { name: 'App-Name', value: 'PermaDeploy' } // Added for dashboard compatibility
+        ]
+      }
     });
     console.log(`Uploaded ${filePath} with ID: ${uploadResult.id}`);
     return uploadResult.id;
@@ -66,17 +69,6 @@ function getContentType(filePath) {
     '.json': 'application/json'
   };
   return mimeTypes[ext] || 'application/octet-stream';
-}
-
-// Function to ensure aos is installed locally (optional now, but kept for compatibility)
-function ensureAosInstalled() {
-  try {
-    execSync('npx aos --version', { stdio: 'ignore' });
-  } catch (error) {
-    console.log('Installing aos locally...');
-    execSync('npm install aos@latest --save-dev', { stdio: 'inherit' });
-    console.log('aos installed successfully.');
-  }
 }
 
 async function main() {
@@ -160,24 +152,6 @@ async function main() {
   }
 
   console.log(`View your deployment at: https://arweave.net/${manifestTxId}`);
-
-  if (!dryRun && config.versionHistoryProcessId && manifestTxId !== 'upload-failed') {
-    const versionData = {
-      timestamp: new Date().toISOString(),
-      commit: getCommitHash(),
-      manifestId: manifestTxId,
-      files: fileTxIds
-    };
-    try {
-      await updateVersionHistory(config.versionHistoryProcessId, versionData, config.walletPath);
-    } catch (error) {
-      console.error('Warning: Failed to update version history:', error.message);
-      console.log('Deployment still successful.');
-    }
-  } else if (manifestTxId === 'upload-failed') {
-    console.warn('Skipping version history update due to failed manifest upload.');
-  }
-
   console.log('Deployment completed successfully.');
 }
 
