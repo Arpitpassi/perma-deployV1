@@ -660,7 +660,7 @@ console.log(walletAddress)
           throw new Error('Please connect your wallet first.');
         }
 
-        // Step 2: Check and request permissions
+        // Step 2: Check and request permissions enter 
         const permissions = await window.arweaveWallet.getPermissions();
         logDebug(`Current wallet permissions: ${permissions}`);
         if (!permissions.includes('SIGN_TRANSACTION') || !permissions.includes('ACCESS_ADDRESS')) {
