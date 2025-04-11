@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PermaDeploy - Deploy to Arweave</title>
+  <style>
+    /* Styles remain unchanged */
+    :root {
+      --neon-green: #00ffee;
+      --neon-blue: #0b9aff;
+      --deep-space: #000b14;
+      --terminal-bg: rgba(0, 8, 15, 0.98);
+      --terminal-border: rgb(255, 0, 200);
+      --grid-color: rgba(0, 255, 102, 0.1);
+    }
+    body {
+      font-family: 'Courier New', monospace;
+      background-color: var(--deep-space);
+      background-image: linear-gradient(var(--grid-color) 1px, transparent 1px),
+                        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+      background-size: 30px 30px;
+      color: white;
+      margin: 0;
+      padding: 0;
+    }
+    .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+    h1, h2 {
+      font-family: 'Courier New', monospace;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-shadow: 0 0 10px var(--neon-green), 0 0 20px var(--neon-green);
+      color: var(--neon-green);
+      text-align: center;
+    }
+    h1 { font-size: 2.5em; margin-bottom: 40px; position: relative; }
+    h1:after {
+      content: ""; display: block; width: 60%; height: 3px;
+      background: linear-gradient(90deg, transparent, var(--neon-green), transparent);
+      margin: 15px auto;
+    }
+    section {
+      background: rgba(0, 11, 20, 0.7); border: 1px solid var(--neon-green);
+      border-radius: 8px; margin-bottom: 30px; padding: 20px;
+      box-shadow: 0 0 20px rgba(0, 255, 102, 0.2); position: relative; overflow: hidden;
+    }
+    section:before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--neon-green), transparent);
+      animation: scanline 3s linear infinite;
+    }
+    @keyframes scanline {
+      0% { transform: translateY(-100%); opacity: 0; }
+      50% { opacity: 0.5; }
+      100% { transform: translateY(500px); opacity: 0; }
+    }
+    .step-number {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 30px; height: 30px; border-radius: 50%; background: var(--neon-green);
+      color: black; font-weight: bold; margin-right: 10px; box-shadow: 0 0 10px var(--neon-green);
+    }
+    section h2 { display: flex; align-items: center; margin-top: 0; text-align: left; font-size: 1.3em; }
+    pre {
+      background: var(--terminal-bg); border: 1px solid var(--terminal-border);
+      border-radius: 5px; padding: 10px 15px; margin: 0 0 10px 0; overflow-x: auto;
+      color: var(--neon-green); position: relative; font-family: 'Courier New', monospace;
+      box-shadow: inset 0 0 10px rgba(0, 255, 102, 0.3); line-height: 1.5; font-size: 14px;
+    }
+    #commandOutput, #seedOutput {
+      margin: 0; padding: 15px; background-color: var(--terminal-bg);
+      border: 1px solid var(--neon-green); border-radius: 5px; color: var(--neon-green);
+      font-family: 'Courier New', monospace; overflow-x: auto; line-height: 1.5;
+      white-space: pre-wrap; word-break: break-all;
+    }
+    input, button, select {
+      background: var(--terminal-bg); border: 1px solid var(--neon-green); color: white;
+      padding: 10px 15px; margin: 8px 0; width: 100%; border-radius: 5px;
+      font-family: 'Courier New', monospace; transition: all 0.3s ease;
+    }
+    input::placeholder, select { color: rgba(255, 255, 255, 0.5); }
+    input:focus, select:focus { outline: none; box-shadow: 0 0 10px var(--neon-green); }
+    button {
+      background: var(--deep-space); color: var(--neon-green); cursor: pointer;
+      text-transform: uppercase; letter-spacing: 2px; font-weight: normal; text-align: center;
+    }
+    button:hover { background: var(--neon-green); color: var(--deep-space); box-shadow: 0 0 15px var(--neon-green); }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; background: var(--terminal-bg); }
+    th, td { border: 1px solid var(--neon-green); padding: 10px; text-align: left; }
+    th { background-color: rgba(0, 255, 102, 0.2); color: var(--neon-green); }
+    a { color: var(--neon-blue); text-decoration: none; transition: all 0.3s ease; }
+    a:hover { text-shadow: 0 0 8px var(--neon-blue); }
+    #walletAddress { margin-top: 15px; color: var(--neon-green); font-family: 'Courier New', monospace; }
+    .status-message { padding: 10px; margin-top: 10px; border-radius: 5px; }
+    .success { background-color: rgba(0, 255, 102, 0.2); border: 1px solid var(--neon-green); }
+    .error { background-color: rgba(255, 0, 102, 0.2); border: 1px solid #ff0066; }
+    .loading { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--neon-green); 
+               border-radius: 50%; border-top-color: transparent; animation: spin 1s linear infinite; 
+               margin-right: 10px; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .debug-panel {
+      background: rgba(0, 8, 15, 0.9);
+      color: var(--neon-green);
+      border: 1px solid var(--neon-green);
+      padding: 10px;
+      margin-top: 20px;
+      border-radius: 5px;
+      font-family: monospace;
+      max-height: 150px;
+      overflow-y: auto;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Anantaweb</h1>
+
+    <!-- Version History Lookup Section -->
+    <section id="versionLookup">
+      <h2>View Version History</h2>
+      <p>Enter the project's wallet address to view its deployment history.</p>
+      <input type="text" id="walletInput" placeholder="Wallet Address (e.g., Ht_jbjxq...)">
+      <button onclick="viewVersionHistory()">VIEW HISTORY</button>
+      <div id="versionHistoryDisplay" class="status-message"></div>
+    </section>
+
+    <!-- Step 1: Configure Your Project -->
+    <section id="step1">
+      <h2><span class="step-number">1</span> Initialize Your Project</h2>
+      <p>Enter your project details to generate a wallet and setup command.</p>
+      <input type="text" id="buildCommand" placeholder="Build command (e.g., npm run build)">
+      <input type="text" id="branch" placeholder="Branch to deploy (e.g., main)">
+      <input type="text" id="arnsName" placeholder="ARNS name (optional, e.g., myapp)">
+      <input type="text" id="undername" placeholder="ARNS undername (optional, e.g., dev)">
+      <button onclick="generateWalletAndCommand()">GENERATE WALLET AND COMMAND</button>
+      <pre id="commandOutput"></pre>
+      <button onclick="copyCommand()" style="display: none;" id="copyCommandBtn">COPY COMMAND</button>
+      <p id="walletAddress"></p>
+      <button onclick="copyWalletAddress()" style="display: none;" id="copyWalletBtn">COPY WALLET ADDRESS</button>
+      <pre id="seedOutput"></pre>
+      <button onclick="copySeed()" style="display: none;" id="copySeedBtn">COPY SEED PHRASE</button>
+      <button id="proceedToStep2" onclick="goToStep2()" style="display: none;">PROCEED TO STEP 2</button>
+      <p><strong>Note:</strong> Files under 100KB can be deployed for free without funding. Test your setup first!</p>
+    </section>
+
+    <!-- Step 2: Wallet Funding and ARNS Setup -->
+    <section id="step2" style="display: none;">
+      <h2><span class="step-number">2</span> Fund Wallet and Setup ARNS</h2>
+      <p>Connect your Wander wallet to top up the project wallet and configure ARNS access (optional for files under 100KB).</p>
+      <p>Project Wallet Address: <span id="projectWalletDisplay"></span></p>
+      <label for="antProcesses">Select ARNS Name:</label>
+      <select id="antProcesses">
+        <option value="">Select an ARNS Process</option>
+      </select>
+      <button onclick="initializeAndConnectWallet()">CONNECT WANDER WALLET</button>
+      <button id="topUpButton" onclick="topUpWallet()" disabled>TOP UP PROJECT WALLET (0.1 AR)</button>
+      <button id="grantButton" onclick="grantControllerAccess()" disabled>GRANT CONTROLLER ACCESS</button>
+      <!-- New ARNS Lookup Box -->
+      <p id="status"></p>
+      <div class="debug-panel" id="debugPanel"></div>
+      <button onclick="toggleDebugPanel()">TOGGLE DEBUG INFO</button>
+    </section>
+
+    <!-- Dashboard -->
+    <section id="dashboard" style="display: none;">
+      <h2><span class="step-number">3</span> Deployment Dashboard</h2>
+      <p>Connected Project Wallet: <span id="dashboardWallet"></span></p>
+      <button onclick="loadDashboard()">REFRESH DASHBOARD</button>
+      <table id="deploymentsTable">
+        <thead><tr><th>Transaction ID</th><th>Date</th><th>Link</th></tr></thead>
+        <tbody id="deploymentsBody"></tbody>
+      </table>
+      <div id="versionHistory">
+        <h3>VERSION HISTORY</h3>
+        <ul id="versionList" style="list-style: none; padding: 0;"></ul>
+      </div>
+    </section>
+  </div>
+
+  <!-- Load scripts in the correct order with proper error handling -->
+  <script src="https://unpkg.com/arweave@latest/bundles/web.bundle.min.js"></script>
+  <script src="dist/ar-io-bundle.js"></script>
+  <script src="dist/aoconnect-bundle.js" defer></script>
+  
+  <script>
+    let generatedCommand = '';
+    let projectWalletAddress = '';
+    let walletSeed = '';
+    let mainWalletConnected = false;
+    let sdkLoaded = false;
+    let arweaveInstance = null;
+    const REGISTRY_PROCESS_ID = 'opvwvkcBOrcaoScgWMC3D0HLD_ZWq4zn1gszbv0YfzQ'; // Added AO registry process ID
+    const AO_GATEWAY = 'https://ao.link'; // Added AO gateway
+    
+    // Debug logging function
+    function logDebug(message) {
+      const debugPanel = document.getElementById('debugPanel');
+      const timestamp = new Date().toLocaleTimeString();
+      debugPanel.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+      debugPanel.scrollTop = debugPanel.scrollHeight;
+      console.log(message);
+    }
+    
+    function toggleDebugPanel() {
+      const debugPanel = document.getElementById('debugPanel');
+      debugPanel.style.display = debugPanel.style.display === 'none' ? 'block' : 'none';
+    }
+    
+    // Load Arweave and initialize it globally
+    function initArweave() {
+      if (window.Arweave) {
+        arweaveInstance = Arweave.init({ host: 'arweave.net', port: 443, protocol: 'https' });
+        logDebug('Arweave initialized successfully');
+        return arweaveInstance;
+      }
+      throw new Error('Arweave SDK not loaded');
+    }
+
+    // Check URL parameter to skip to Step 2 if wallet is provided
+    document.addEventListener('DOMContentLoaded', function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlWallet = urlParams.get('wallet');
+      if (urlWallet) {
+        projectWalletAddress = urlWallet;
+        document.getElementById('step1').style.display = 'none';
+        document.getElementById('step2').style.display = 'block';
+        document.getElementById('projectWalletDisplay').textContent = projectWalletAddress;
+      }
+      
+      // Log available objects for debugging
+      logDebug(`Available globals - Arweave: ${typeof window.Arweave !== 'undefined'}, arIO: ${typeof window.arIO !== 'undefined'}, window.arweaveWallet: ${typeof window.arweaveWallet !== 'undefined'}`);
+      
+      // Try to initialize Arweave
+      try {
+        initArweave();
+      } catch (error) {
+        logDebug(`Failed to initialize Arweave: ${error.message}`);
+        document.getElementById('status').textContent = 'Error initializing Arweave. Please refresh the page.';
+        document.getElementById('status').className = 'status-message error';
+      }
+    });
+
+    // Check for wallet availability
+    function checkWalletAvailability() {
+      const wanderWallet = window.arweaveWallet;
+      const oldArConnect = window.arweaveWallet;
+      
+      if (wanderWallet) {
+        logDebug('Wander wallet detected');
+        return { wallet: wanderWallet, type: 'wander' };
+      } else if (oldArConnect) {
+        logDebug('ArConnect wallet detected');
+        return { wallet: oldArConnect, type: 'arconnect' };
+      } else if (window.ethereum && window.ethereum.isMetaMask) {
+        logDebug('MetaMask detected, but not compatible');
+        return { wallet: null, type: 'unsupported', message: 'MetaMask detected but not compatible with Arweave. Please install Wander wallet.' };
+      } else {
+        logDebug('No wallet detected');
+        return { wallet: null, type: 'none', message: 'No Arweave wallet detected. Please install Wander wallet.' };
+      }
+    }
+
+    // Improved SDK loading that properly checks if both libraries are available
+    function isSdkLoaded() {
+      const arweaveLoaded = typeof window.Arweave !== 'undefined';
+      const arIOLoaded = typeof window.arIO !== 'undefined' && typeof window.arIO.ANTRegistry !== 'undefined';
+      
+      logDebug(`SDK check - Arweave: ${arweaveLoaded}, arIO: ${arIOLoaded}`);
+      return arweaveLoaded && arIOLoaded;
+    }
+
+    // Wait for both SDKs to load
+    async function waitForSdkToLoad(timeout = 10000) {
+      return new Promise((resolve, reject) => {
+        if (isSdkLoaded()) {
+          sdkLoaded = true;
+          logDebug('SDKs already loaded');
+          return resolve();
+        }
+        
+        logDebug(`Waiting for SDKs to load (timeout: ${timeout}ms)`);
+        const startTime = Date.now();
+        const checkInterval = setInterval(() => {
+          if (isSdkLoaded()) {
+            clearInterval(checkInterval);
+            sdkLoaded = true;
+            logDebug('SDKs loaded successfully');
+            resolve();
+          } else if (Date.now() - startTime > timeout) {
+            clearInterval(checkInterval);
+            const error = new Error('SDK loading timeout. Please refresh the page.');
+            logDebug(`SDK loading timeout after ${timeout}ms`);
+            reject(error);
+          }
+        }, 100);
+      });
+    }
+
+    // Initialize SDKs and connect wallet
+    async function initializeAndConnectWallet() {
+      const statusEl = document.getElementById('status');
+      
+      try {
+        statusEl.innerHTML = '<span class="loading"></span> Checking wallet availability...';
+        statusEl.className = 'status-message';
+        
+        // Check wallet availability
+        const walletInfo = checkWalletAvailability();
+        
+        if (!walletInfo.wallet) {
+          throw new Error(walletInfo.message || 'Wander wallet not detected. Please install Wander (formerly ArConnect).');
+        }
+        
+        logDebug(`Using wallet type: ${walletInfo.type}`);
+        
+        statusEl.innerHTML = '<span class="loading"></span> Loading AR.IO SDK...';
+        
+        // Try to load SDKs if not already loaded
+        if (!sdkLoaded) {
+          try {
+            await waitForSdkToLoad(15000); // Increased timeout
+          } catch (sdkError) {
+            // If SDK loading fails, try to use Arweave only functionality
+            logDebug(`SDK loading failed: ${sdkError.message}. Falling back to basic functionality.`);
+            statusEl.innerHTML = '<span class="loading"></span> AR.IO SDK failed to load. Limited functionality available.';
+          }
+        }
+        
+        statusEl.innerHTML = '<span class="loading"></span> Connecting to wallet...';
+        
+        // Connect to wallet
+        try {
+          await window.arweaveWallet.connect(['SIGN_TRANSACTION', 'ACCESS_ADDRESS']);
+          
+          const address = await window.arweaveWallet.getActiveAddress();
+          logDebug(`Connected wallet address: ${address}`);
+          
+          // Enable buttons and update status
+          mainWalletConnected = true;
+          document.getElementById('topUpButton').disabled = false;
+          
+          statusEl.textContent = 'Wallet connected successfully!';
+          statusEl.className = 'status-message success';
+          
+          // Try to fetch ANT processes if SDK is loaded
+          if (sdkLoaded) {
+            document.getElementById('grantButton').disabled = false;
+            statusEl.innerHTML = '<span class="loading"></span> Fetching ARNS processes...';
+            try {
+              await populateAntProcesses(address);
+            } catch (antError) {
+              logDebug(`Failed to fetch ANT processes: ${antError.message}`);
+              statusEl.textContent = `Wallet connected, but ARNS features unavailable. Top-up is still available.`;
+            }
+          } else {
+            statusEl.textContent = `Wallet connected! ARNS features unavailable, but top-up is still available.`;
+          }
+        } catch (connectError) {
+          throw new Error(`Failed to connect to wallet: ${connectError.message}`);
+        }
+      } catch (error) {
+        console.error('Initialization error:', error);
+        logDebug(`Initialization error: ${error.message}`);
+        statusEl.textContent = `Error: ${error.message}`;
+        statusEl.className = 'status-message error';
+      }
+    }
+
+    async function generateWalletAndCommand() {
+    try {
+      const buildCommand = document.getElementById('buildCommand').value || 'npm run build';
+      const branch = document.getElementById('branch').value || 'main';
+      const arnsName = document.getElementById('arnsName').value || '';
+      const undername = document.getElementById('undername').value || '';
+
+      // Generate random seed
+      const seedArray = window.crypto.getRandomValues(new Uint8Array(32));
+      const seedBase64 = btoa(String.fromCharCode.apply(null, seedArray));
+      
+      // Initialize Arweave if not already initialized
+      if (!arweaveInstance) {
+        arweaveInstance = Arweave.init({ host: 'arweave.net', port: 443, protocol: 'https' });
+      }
+      
+      // Generate wallet
+      const jwk = await arweaveInstance.wallets.generate();
+      const walletAddress = await arweaveInstance.wallets.jwkToAddress(jwk);
+      logDebug(`Generated new wallet address: ${walletAddress}`);
+
+      // Updated command without npm install -g ao-deploy
+      generatedCommand = `npx perma-deploy-init --build "${buildCommand}" --branch "${branch}"${arnsName ? ` --arns "${arnsName}"` : ''}${undername ? ` --undername "${undername}"` : ''} --seed "${seedBase64}"`;
+
+      // Store values for later use
+      projectWalletAddress = walletAddress;
+      walletSeed = seedBase64;
+
+      // Update UI
+      document.getElementById('commandOutput').textContent = generatedCommand;
+      document.getElementById('walletAddress').textContent = `Project Wallet Address: ${walletAddress}`;
+      document.getElementById('seedOutput').textContent = `Base64 Seed: ${seedBase64}`;
+      
+      // Show buttons
+      document.getElementById('proceedToStep2').style.display = 'block';
+      document.getElementById('copyCommandBtn').style.display = 'block';
+      document.getElementById('copyWalletBtn').style.display = 'block';
+      document.getElementById('copySeedBtn').style.display = 'block';
+    } catch (error) {
+      console.error('Error generating wallet:', error);
+      logDebug(`Error generating wallet: ${error.message}`);
+      document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+    }
+  }
+    function copyCommand() {
+      navigator.clipboard.writeText(generatedCommand)
+        .then(() => alert('Command copied!'))
+        .catch(err => console.error('Failed to copy command:', err));
+    }
+
+    function copyWalletAddress() {
+      navigator.clipboard.writeText(projectWalletAddress)
+        .then(() => alert('Wallet address copied!'))
+        .catch(err => console.error('Failed to copy wallet address:', err));
+    }
+
+    function copySeed() {
+      navigator.clipboard.writeText(walletSeed)
+        .then(() => alert('Seed phrase copied! Keep it safe!'))
+        .catch(err => console.error('Failed to copy seed:', err));
+    }
+
+    function goToStep2() {
+      if (!projectWalletAddress) {
+        alert('Please generate a wallet first.');
+        return;
+      }
+      document.getElementById('step1').style.display = 'none';
+      document.getElementById('step2').style.display = 'block';
+      document.getElementById('projectWalletDisplay').textContent = projectWalletAddress;
+    }
+
+    async function populateAntProcesses(address) {
+      try {
+        if (!sdkLoaded) {
+          await waitForSdkToLoad();
+        }
+        
+        logDebug('Fetching ANT processes for address: ' + address);
+        
+        // Check if arIO is properly loaded
+        if (!window.arIO || !window.arIO.ANTRegistry) {
+          throw new Error('ARIO SDK not loaded or initialized properly');
+        }
+        
+        // Initialize registry and fetch processes
+        const registry = window.arIO.ANTRegistry.init();
+        const processes = await getANTProcessesOwnedByWallet({ address, registry });
+        logDebug(`Retrieved ${processes.length} processes`);
+        
+        // Update dropdown
+        const dropdown = document.getElementById('antProcesses');
+        dropdown.innerHTML = '<option value="">Select an ARNS Process</option>';
+        
+        if (processes.length === 0) {
+          document.getElementById('status').textContent = 'Wallet connected! No ARNS processes found for this wallet.';
+          return processes; // Return empty array
+        }
+        
+        processes.forEach(processId => {
+          const option = document.createElement('option');
+          option.value = processId;
+          option.textContent = processId;
+          dropdown.appendChild(option);
+        });
+        
+        document.getElementById('status').textContent = 'Wallet connected and ARNS processes loaded!';
+        document.getElementById('status').className = 'status-message success';
+        return processes; // Return the process list
+      } catch (error) {
+        logDebug(`Error fetching ANT processes: ${error.message}`);
+        throw error;
+      }
+    }
+
+    async function getANTProcessesOwnedByWallet({ address, registry }) {
+      try {
+        const res = await registry.accessControlList({ address });
+        if (!res || (!res.Owned && !res.Controlled)) {
+          return [];
+        }
+        
+        const owned = Array.isArray(res.Owned) ? res.Owned : [];
+        const controlled = Array.isArray(res.Controlled) ? res.Controlled : [];
+        return [...new Set([...owned, ...controlled])];
+      } catch (error) {
+        logDebug(`Error in getANTProcessesOwnedByWallet: ${error.message}`);
+        return [];
+      }
+    }
+
+    async function topUpWallet() {
+      const statusEl = document.getElementById('status');
+      statusEl.innerHTML = '<span class="loading"></span> Initiating top-up...';
+      statusEl.className = 'status-message';
+
+      try {
+        // Step 1: Verify wallet availability and connection
+        if (!window.arweaveWallet) {
+          throw new Error('Wander wallet not detected. Please install Wander.');
+        }
+        if (!mainWalletConnected) {
+          throw new Error('Please connect your wallet first.');
+        }
+
+        // Step 2: Check and request permissions
+        const permissions = await window.arweaveWallet.getPermissions();
+        logDebug(`Current wallet permissions: ${permissions}`);
+        if (!permissions.includes('SIGN_TRANSACTION') || !permissions.includes('ACCESS_ADDRESS')) {
+          await window.arweaveWallet.connect(['ACCESS_ADDRESS', 'SIGN_TRANSACTION'], { name: 'PermaDeploy' });
+          logDebug('Requested ACCESS_ADDRESS and SIGN_TRANSACTION permissions');
+        }
+
+        // Step 3: Initialize Arweave
+        if (!arweaveInstance) {
+          arweaveInstance = initArweave();
+        }
+
+        // Step 4: Verify project wallet address
+        if (!projectWalletAddress) {
+          throw new Error('Project wallet address not set.');
+        }
+        logDebug(`Topping up ${projectWalletAddress} with 0.1 AR`);
+
+        // Step 5: Get sender address
+        const senderAddress = await window.arweaveWallet.getActiveAddress();
+        logDebug(`Sender address: ${senderAddress}`);
+
+        // Step 6: Check balance
+        const balanceWinston = await arweaveInstance.wallets.getBalance(senderAddress);
+        const balanceAR = arweaveInstance.ar.winstonToAr(balanceWinston);
+        logDebug(`Sender balance: ${balanceAR} AR`);
+        if (parseFloat(balanceAR) < 0.1) {
+          throw new Error('Insufficient balance in sender wallet. Need at least 0.1 AR.');
+        }
+
+        // Step 7: Create transaction
+        const amount = arweaveInstance.ar.arToWinston('0.1');
+        if (!amount) {
+          throw new Error('Failed to convert AR to Winston.');
+        }
+        logDebug(`Amount in Winston: ${amount}`);
+
+        const tx = await arweaveInstance.createTransaction({
+          target: projectWalletAddress,
+          quantity: amount
+        }, 'auto'); // 'auto' uses wallet API to fill owner/last_tx
+        logDebug(`Transaction created: ${JSON.stringify(tx, null, 2)}`);
+
+        // Step 8: Sign transaction
+        statusEl.innerHTML = '<span class="loading"></span> Signing transaction...';
+        const signedTx = await window.arweaveWallet.sign(tx);
+        logDebug(`Signed transaction: ${JSON.stringify(signedTx, null, 2)}`);
+
+        // Step 9: Verify critical fields
+        if (!signedTx.signature) {
+          throw new Error('Transaction signature missing after signing.');
+        }
+        if (!signedTx.owner) {
+          throw new Error('Transaction owner field missing.');
+        }
+        if (!signedTx.id) {
+          throw new Error('Transaction ID missing.');
+        }
+        logDebug(`Signature: ${signedTx.signature}, Owner: ${signedTx.owner}, ID: ${signedTx.id}`);
+
+        // Step 10: Submit transaction
+        statusEl.innerHTML = '<span class="loading"></span> Submitting transaction...';
+        const response = await arweaveInstance.transactions.post(signedTx);
+        logDebug(`Submission response: ${response.status} - ${response.statusText}`);
+
+        if (response.status !== 200 && response.status !== 202) {
+          // Fetch detailed error from gateway
+          const errorDetails = await fetch(`https://arweave.net/tx/${signedTx.id}/status`).then(res => res.text());
+          throw new Error(`Transaction failed with status ${response.status}: ${response.statusText}. Details: ${errorDetails}`);
+        }
+
+        statusEl.textContent = `Top-up successful! TX ID: ${signedTx.id}`;
+        statusEl.className = 'status-message success';
+        setTimeout(() => loadDashboard(), 5000);
+      } catch (error) {
+        logDebug(`Top-up error: ${error.message}`);
+        statusEl.textContent = `Error: ${error.message}`;
+        statusEl.className = 'status-message error';
+      }
+    }
+
+    async function grantControllerAccess() {
+      const selectedProcess = document.getElementById('antProcesses').value;
+      const statusEl = document.getElementById('status');
+      
+      if (!projectWalletAddress || !selectedProcess) {
+        alert('Please ensure project wallet and an ARNS process are selected.');
+        return;
+      }
+      
+      if (!mainWalletConnected) {
+        alert('Please connect your wallet first.');
+        return;
+      }
+      
+      try {
+        statusEl.innerHTML = '<span class="loading"></span> Granting controller access...';
+        statusEl.className = 'status-message';
+        
+        if (!sdkLoaded) {
+          await waitForSdkToLoad();
+        }
+        
+        if (!window.arIO || !window.arIO.ANT) {
+          throw new Error('ARIO SDK not loaded or initialized properly');
+        }
+        
+        logDebug(`Granting controller access to ${projectWalletAddress} for process ${selectedProcess}`);
+        
+        const ant = window.arIO.ANT.init({ processId: selectedProcess, signer: window.arweaveWallet });
+        await ant.addController({ controller: projectWalletAddress });
+        
+        statusEl.textContent = `Controller access granted to ${projectWalletAddress} for process ${selectedProcess}!`;
+        statusEl.className = 'status-message success';
+      } catch (error) {
+        console.error('Grant controller error:', error);
+        logDebug(`Grant controller error: ${error.message}`);
+        statusEl.textContent = `Error granting access: ${error.message}`;
+        statusEl.className = 'status-message error';
+      }
+    }
+
+    async function viewVersionHistory() {
+  const walletAddress = document.getElementById('walletInput').value;
+  const display = document.getElementById('versionHistoryDisplay');
+  if (!walletAddress) {
+    display.textContent = 'Please enter a wallet address.';
+    display.className = 'status-message error';
+    return;
+  }
+  if (!window.aoconnect) {
+    logDebug('Error: aoconnect library not loaded');
+    display.textContent = 'Error: aoconnect library not loaded';
+    display.className = 'status-message error';
+    return;
+  }
+  if (!window.arweaveWallet || !mainWalletConnected) {
+    logDebug('Wallet not connected');
+    display.textContent = 'Please connect your Wander wallet first (Step 2) to sign the request.';
+    display.className = 'status-message error';
+    return;
+  }
+  try {
+    logDebug(`Fetching version history for wallet: ${walletAddress}`);
+    const { message, result, createDataItemSigner } = window.aoconnect;
+    const signer = createDataItemSigner(window.arweaveWallet);
+
+    const REGISTRY_PROCESS_ID = 'opvwvkcBOrcaoScgWMC3D0HLD_ZWq4zn1gszbv0YfzQ';
+    const registryMessageId = await message({
+      process: REGISTRY_PROCESS_ID,
+      tags: [
+        { name: 'Action', value: 'GetProcessId' },
+        { name: 'WalletAddress', value: walletAddress },
+      ],
+      signer,
+    });
+    console.log('Registry message ID:', registryMessageId); // Debug
+    const registryResult = await result({
+      message: registryMessageId,
+      process: REGISTRY_PROCESS_ID,
+    });
+    console.log('Registry result:', registryResult); // Debug full response
+    const versionHistoryProcessId = registryResult.Data || '';
+    console.log('Retrieved process ID:', versionHistoryProcessId); // Debug
+    if (!versionHistoryProcessId) {
+      display.textContent = `No version history process found for wallet ${walletAddress}.`;
+      display.className = 'status-message error';
+      return;
+    }
+    // Query version history process
+        const versionMessageId = await message({
+          process: versionHistoryProcessId,
+          tags: [{ name: 'Action', value: 'GetVersions' }],
+          signer,
+        });
+        const versionResult = await result({
+          message: versionMessageId,
+          process: versionHistoryProcessId,
+        });
+        const versions = JSON.parse(versionResult.Data || '[]');
+
+        // Display versions
+        display.innerHTML = versions.length > 0
+          ? versions.map(v => 
+              `<p>Manifest: ${v.manifestId} - ${new Date(v.timestamp).toLocaleString()} (Commit: ${v.commit || 'N/A'}) <a href="https://arweave.net/${v.manifestId}" target="_blank">View</a></p>`
+            ).join('')
+          : `No version history found for wallet ${walletAddress}.`;
+        display.className = 'status-message success';
+      } catch (error) {
+        logDebug(`Error fetching version history: ${error.message}`);
+        display.textContent = `Error: ${error.message}`;
+        display.className = 'status-message error';
+      }
+    }
+
+    async function loadVersionHistory(walletAddress) {
+      try {
+        if (!window.aoconnect) throw new Error('aoconnect library not loaded');
+        if (!window.arweaveWallet || !mainWalletConnected) throw new Error('Please connect your Wander wallet first');
+        const { message, result, createDataItemSigner } = window.aoconnect;
+        const signer = createDataItemSigner(window.arweaveWallet);
+
+        const registryMessageId = await message({
+          process: REGISTRY_PROCESS_ID,
+          tags: [
+            { name: 'Action', value: 'GetProcessId' },
+            { name: 'WalletAddress', value: walletAddress },
+          ],
+          signer,
+        });
+        const registryResult = await result({
+          message: registryMessageId,
+          process: REGISTRY_PROCESS_ID,
+        });
+        const versionHistoryProcessId = registryResult.Data || '';
+        if (!versionHistoryProcessId) {
+          document.getElementById('versionList').innerHTML = `<li>No version history process found for wallet ${walletAddress}.</li>`;
+          return;
+        }
+
+        const versionMessageId = await message({
+          process: versionHistoryProcessId,
+          tags: [{ name: 'Action', value: 'GetVersions' }],
+          signer,
+        });
+        const versionResult = await result({
+          message: versionMessageId,
+          process: versionHistoryProcessId,
+        });
+        const versions = JSON.parse(versionResult.Data || '[]');
+
+        const versionList = document.getElementById('versionList');
+        versionList.innerHTML = versions.length > 0
+          ? versions.map(v => 
+              `<li>Manifest: ${v.manifestId} - ${new Date(v.timestamp).toLocaleString()} (Commit: ${v.commit || 'N/A'}) <a href="https://arweave.net/${v.manifestId}" target="_blank">View</a></li>`
+            ).join('')
+          : `<li>No version history found for wallet ${walletAddress}.</li>`;
+      } catch (error) {
+        logDebug(`Error loading version history: ${error.message}`);
+        document.getElementById('versionList').innerHTML = `<li>Error loading version history: ${error.message}</li>`;
+      }
+    }
+
+    // Existing loadDashboard function updated to call loadVersionHistory with projectWalletAddress
+    async function loadDashboard() {
+      if (!projectWalletAddress) {
+        alert('No project wallet connected.');
+        return;
+      }
+      
+      document.getElementById('step2').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      document.getElementById('dashboardWallet').textContent = projectWalletAddress;
+
+      try {
+        if (!arweaveInstance) arweaveInstance = initArweave();
+        
+        await loadVersionHistory(projectWalletAddress);
+
+        const query = {
+          op: 'and',
+          expr1: { op: 'equals', expr1: 'from', expr2: projectWalletAddress },
+          expr2: { op: 'equals', expr1: 'App-Name', expr2: 'PermaDeploy' },
+        };
+        
+        const txIds = await arweaveInstance.arql(query);
+        const deploymentsBody = document.getElementById('deploymentsBody');
+        deploymentsBody.innerHTML = '';
+        
+        if (!txIds || txIds.length === 0) {
+          deploymentsBody.innerHTML = '<tr><td colspan="3">No deployments found</td></tr>';
+          return;
+        }
+        
+        for (const txId of txIds) {
+          try {
+            const tx = await arweaveInstance.transactions.get(txId);
+            const timestamp = tx && tx.timestamp ? new Date(tx.timestamp * 1000).toLocaleString() : 'Unknown date';
+            const row = `<tr><td>${txId}</td><td>${timestamp}</td><td><a href="https://arweave.net/${txId}" target="_blank">View</a></td></tr>`;
+            deploymentsBody.innerHTML += row;
+          } catch (err) {
+            logDebug(`Error fetching transaction ${txId}: ${err.message}`);
+          }
+        }
+      } catch (error) {
+        console.error('Dashboard load error:', error);
+        document.getElementById('deploymentsBody').innerHTML = `<tr><td colspan="3">Error loading deployments: ${error.message}</td></tr>`;
+      }
+    }
+  </script>
+</body>
+</html>
