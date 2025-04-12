@@ -60,7 +60,6 @@ async function main() {
     arnsName: argv.arns,
     undername: argv.undername,
     walletAddress,
-    seed: argv.seed,
   };
   fs.writeFileSync(path.join(permaDeployDir, 'config.json'), JSON.stringify(config, null, 2));
 
