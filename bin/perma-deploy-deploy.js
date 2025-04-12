@@ -9,7 +9,6 @@ const yargs = require('yargs');
 const { hideBin } = require('yargs/helpers');
 const ANT = require('@ar.io/sdk');
 
-
 // Function to retrieve commit hash
 function getCommitHash() {
   try {
@@ -149,38 +148,42 @@ async function main() {
     manifestTxId = await uploadFile(manifestPath, dryRun, turbo, 'application/x.arweave-manifest+json');
     console.log(`Manifest uploaded with ID: ${manifestTxId}`);
     
-    const ant = ANT.init({ processId: ANT_PROCESS, signer });
-    const commitHash = getCommitHash();
-		// Update the ANT record (assumes the signer is a controller or owner)
-		await ant.setUndernameRecord(
-			{
-				undername: config.undername,
-				transactionId: manifestTxId,
-				ttlSeconds: 3600,
-			},
-			{
-				tags: [
-					{
-						name: 'GIT-HASH',
-						value: commitHash || '',
-					},
-					{
-						name: 'App-Name',
-						value: 'Anantaweb',
-					},
-					{
-						name: 'anchor',
-						value: new Date().toISOString(),
-					},
-				],
-			}
-		);
+    if (config.antProcess) {
+      const ant = ANT.init({ processId: config.antProcess, signer: { wallet } });
+      const commitHash = getCommitHash();
+      // Update the ANT record (assumes the signer is a controller or owner)
+      await ant.setUndernameRecord(
+        {
+          undername: config.undername || '',
+          transactionId: manifestTxId,
+          ttlSeconds: 3600,
+        },
+        {
+          tags: [
+            {
+              name: 'GIT-HASH',
+              value: commitHash || '',
+            },
+            {
+              name: 'App-Name',
+              value: 'Anantaweb',
+            },
+            {
+              name: 'anchor',
+              value: new Date().toISOString(),
+            },
+          ],
+        }
+      );
+      console.log(`Updated ANT record for process ${config.antProcess}`);
+    } else {
+      console.warn('No ANT process ID found in config. Skipping ANT record update.');
+    }
 
   } catch (error) {
-    console.error(`Error uploading manifest: ${error.message}. Using placeholder ID.`);
+    console.error(`Error uploading manifest or updating ANT record: ${error.message}. Using placeholder ID.`);
     manifestTxId = 'upload-failed';
   }
-  
   
   console.log(`View your deployment at: https://arweave.net/${manifestTxId}`);
   console.log('Deployment completed successfully.');
@@ -190,4 +193,3 @@ main().catch(err => {
   console.error('Deployment failed:', err.message);
   process.exit(1);
 });
-

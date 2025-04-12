@@ -4,18 +4,42 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const yargs = require('yargs');
+const { hideBin } = require('yargs/helpers');
 const Arweave = require('arweave');
 
 async function main() {
-  const argv = yargs
-    .option('project-name', { type: 'string', describe: 'Project name', default: path.basename(process.cwd()) })
-    .option('build', { type: 'string', describe: 'Build command (e.g., npm run build)' })
-    .option('branch', { type: 'string', describe: 'Branch to deploy (e.g., main)' })
-    .option('arns', { type: 'string', describe: 'ARNS name (e.g., myapp)' })
-    .option('undername', { type: 'string', describe: 'ARNS undername (e.g., dev)' })
-    .option('seed', { type: 'string', describe: 'Base64 encoded 32-byte seed', demandOption: true })
+  const argv = yargs(hideBin(process.argv))
+    .option('project-name', {
+      type: 'string',
+      description: 'Project name',
+      default: path.basename(process.cwd())
+    })
+    .option('build', {
+      type: 'string',
+      description: 'Build command (e.g., npm run build)'
+    })
+    .option('branch', {
+      type: 'string',
+      description: 'Branch to deploy (e.g., main)'
+    })
+    .option('arns', {
+      type: 'string',
+      description: 'ARNS name (e.g., myapp)'
+    })
+    .option('undername', {
+      type: 'string',
+      description: 'ARNS undername (e.g., dev)'
+    })
+    .option('ant-process', {
+      type: 'string',
+      description: 'ANT process ID (e.g., SvcHmgBgdRi4mAAcpw4zVcHnhyWGOyZWIMM3c1ABaEA)'
+    })
+    .option('seed', {
+      type: 'string',
+      description: 'Base64 encoded 32-byte seed',
+      demandOption: true
+    })
     .argv;
-    
 
   const projectName = argv['project-name'];
 
@@ -58,9 +82,10 @@ async function main() {
     walletPath,
     buildCommand: argv.build || 'npm run build',
     deployBranch: argv.branch || 'main',
-    arnsName: argv.arns,
-    undername: argv.undername,
-    walletAddress,
+    arnsName: argv.arns || null,
+    undername: argv.undername || null,
+    antProcess: argv['ant-process'] || null,
+    walletAddress
   };
   fs.writeFileSync(path.join(permaDeployDir, 'config.json'), JSON.stringify(config, null, 2));
 
@@ -76,6 +101,7 @@ async function main() {
 
   console.log(`\nSetup complete! Wallet saved to: ${walletPath}`);
   console.log(`Wallet address: **${walletAddress}**`);
+  console.log('Config saved to:', path.join(permaDeployDir, 'config.json'));
   console.log('Test your deployment by committing changes!');
 }
 
