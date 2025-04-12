@@ -8,7 +8,6 @@ With Anantweb, you can:
 - Initialize a project and generate a wallet.
 - Fund the wallet for deployments.
 - Set up a custom domain using ARNS (Arweave Name Service).
-- View your deployment history.
 
 This README provides step-by-step instructions to get you started.
 

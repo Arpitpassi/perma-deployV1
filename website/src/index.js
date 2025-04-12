@@ -1,4 +1,3 @@
-// Your existing JavaScript function
 let generatedCommand = '';
 let projectWalletAddress = '';
 let walletSeed = '';
@@ -7,7 +6,7 @@ let sdkLoaded = false;
 let arweaveInstance = null;
 let arnsData = [];
 
-const REGISTRY_PROCESS_ID = 'bq53rqJm0cHSBm45zS4LOEyXE-IgumsMr9DnO6g608E'; // Updated to reference JS process ID
+const REGISTRY_PROCESS_ID = 'bq53rqJm0cHSBm45zS4LOEyXE-IgumsMr9DnO6g608E';
 const AO_GATEWAY = 'https://ao.link';
 
 function logDebug(message) {
@@ -33,7 +32,7 @@ function showStatusMessage(elementId, message, type) {
     setTimeout(() => {
       statusEl.textContent = '';
       statusEl.className = 'status-message';
-    }, 500); // Wait for fade-out transition
+    }, 500);
   }, 5000);
 }
 

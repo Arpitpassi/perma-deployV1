@@ -2,79 +2,126 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ANANTWEB - Deploy to Arweave</title>
   <link rel="stylesheet" href="src/style.css">
 </head>
 <body>
   <div class="container">
     <div class="logo">AW</div>
+    <button class="theme-toggle" id="themeToggle">TOGGLE THEME</button>
     <div class="image-box"></div>
     <div class="meta-title" id="metaTitle">
-      <div>Anant</div>
+      <div>ANANT</div>
       <div>WEB</div>
     </div>
     <div class="subtitle" id="subtitle">
       DEPLOY TO<br>ARWEAVE
     </div>
     <canvas id="particleCanvas"></canvas>
+    <div class="build-progress" id="buildProgress"></div>
     <div class="wallet-buttons">
       <div class="step-label">Step 1</div>
-      <button class="wallet-btn" id="connectWalletBtn" onclick="initializeAndConnectWallet()">Connect Wallet</button>
-      <button class="wallet-btn" id="disconnectWallet" style="display: none;" onclick="disconnectWallet()">Disconnect Wallet</button>
+      <button class="wallet-btn" id="connectWalletBtn" onclick="initializeAndConnectWallet()">CONNECT WALLET</button>
+      <button class="wallet-btn" id="disconnectWallet" style="display: none;" onclick="disconnectWallet()">DISCONNECT WALLET</button>
       <div class="wallet-status-text" id="walletConnectedText" style="display: none;">Wallet Connected</div>
     </div>
     <div class="generate-btn">
       <div class="step-label">Step 2</div>
-      <button class="wallet-btn" id="generateCommandBtn">Generate Command</button>
+      <button class="wallet-btn" id="generateCommandBtn" onclick="showConfigForm()">GENERATE COMMAND</button>
     </div>
     <div class="configuration-form" id="configForm">
-      <button class="close-btn" onclick="closeWindow()">×</button>
+      <button class="close-btn" onclick="closeWindow('configForm')">×</button>
       <h2>Configure Project</h2>
-      <div class="form-step active">
+      <div class="form-step active" id="step1">
+        <input type="text" id="projectName" placeholder="Project name (optional)">
         <input type="text" id="branch" placeholder="Branch to deploy (e.g., main)">
         <input type="text" id="installCommand" placeholder="Install command (e.g., npm install)">
         <button class="wallet-btn" onclick="nextStep(0)">Next</button>
-        <button class="wallet-btn" onclick="goBack(0)">Back</button>
       </div>
-      <div class="form-step">
+      <div class="form-step" id="step2">
         <input type="text" id="buildCommand" placeholder="Build command (e.g., npm run build)">
+        <input type="text" id="deployFolder" placeholder="Deploy folder (e.g., dist)">
+        <div class="checkbox-container">
+          <input type="checkbox" id="autoDeploy" checked>
+          <label for="autoDeploy">Set up automatic deployment on commit</label>
+        </div>
         <button class="wallet-btn" onclick="nextStep(1)">Next</button>
         <button class="wallet-btn" onclick="goBack(1)">Back</button>
       </div>
-      <div class="form-step">
-        <label for="arnsNames">Select ARNS Name:</label>
-        <select id="arnsNames">
-          <option value="">Select an ARNS Name</option>
+      <div class="form-step" id="step3">
+        <label for="sigType">Wallet Type:</label>
+        <select id="sigType">
+          <option value="arweave">Arweave</option>
+          <option value="ethereum">Ethereum</option>
+          <option value="polygon">Polygon</option>
         </select>
-        <input type="text" id="undername" placeholder="ARNS undername (optional, e.g., dev)">
-        <button class="generate-btn-large" onclick="generateCommandWrapper()">Generate</button>
-        <button class="wallet-btn" onclick="nextStep(2)">Next</button>
+        
+        <label for="arnsNames">Select ANT Process:</label>
+        <select id="arnsNames">
+          <option value="">Select an ANT Process</option>
+          <!-- Will be populated with ANT processes when connected to wallet -->
+        </select>
+        
+        <label for="arnsName">ARNS Name (optional):</label>
+        <input type="text" id="arnsName" placeholder="ARNS name (e.g., myapp)">
+        
+        <label for="undername">Undername (optional):</label>
+        <input type="text" id="undername" placeholder="ARNS undername (e.g., dev)">
+        
+        <button class="generate-btn-large" onclick="generateAndShowInitCommand()">Generate</button>
         <button class="wallet-btn" onclick="goBack(2)">Back</button>
       </div>
-      <div class="form-step">
+    </div>
+    
+    <!-- Initialization Command Output -->
+    <div class="command-output" id="initCommandOutputDiv">
+      <button class="close-btn" onclick="closeWindow('initCommandOutputDiv')">×</button>
+      <h2>Initialization Command</h2>
+      <pre id="initCommandOutput"></pre>
+      <button class="wallet-btn" onclick="copyInitCommand()">Copy Command</button>
+      <pre id="seedOutput"></pre>
+      <div class="wallet-info-notice">
+        <p>Initialize your project and get its wallet address.</p>
+      </div>
+      
+      <!-- Wallet Operations Section -->
+      <div class="wallet-operations-section">
+        <h3>Wallet Operations</h3>
         <input type="text" id="projectWalletInput" placeholder="Paste project wallet address">
         <button class="wallet-btn" onclick="usePastedWallet()">Set Project Wallet</button>
         <p id="projectWalletDisplay"></p>
         <button class="wallet-btn" id="topUpButton" onclick="topUpWallet()" disabled>Top Up Project Wallet (0.1 AR)</button>
         <button class="wallet-btn" id="grantButton" onclick="grantControllerAccess()" disabled>Grant Controller Access</button>
-        <button class="wallet-btn" onclick="goBack(3)">Back</button>
       </div>
+      
+      <button class="wallet-btn" onclick="showDeployCommand()">Show Deploy Command</button>
+      <button class="wallet-btn" onclick="closeWindow('initCommandOutputDiv')">Back</button>
     </div>
-    <div class="command-output" id="commandOutputDiv">
-      <button class="close-btn" onclick="closeWindow()">×</button>
-      <h2>Generated Command</h2>
-      <pre id="commandOutput"></pre>
-      <button class="wallet-btn" onclick="copyCommand()">Copy Command</button>
-      <pre id="seedOutput"></pre>
-      <button class="wallet-btn" onclick="goToWalletOperations()">Wallet Operations</button>
-      <button class="wallet-btn" onclick="goBack(4)">Back</button>
+    
+    <!-- Deploy Command Output -->
+    <div class="command-output" id="deployCommandOutputDiv">
+      <button class="close-btn" onclick="closeWindow('deployCommandOutputDiv')">×</button>
+      <h2>Deploy Command</h2>
+      <pre id="deployCommandOutput"></pre>
+      <button class="wallet-btn" onclick="copyDeployCommand()">Copy Command</button>
+      <div id="walletInfo">
+        <h3>Deployment Information</h3>
+        <p>Execute the command above to deploy your project</p>
+      </div>
+      <button class="wallet-btn" onclick="goBackToInitCommand()">Back to Initialization</button>
+      <button class="wallet-btn" onclick="closeWindow('deployCommandOutputDiv')">Close</button>
+      
     </div>
+    
     <p class="status-message" id="walletStatus"></p>
     <p class="status-message" id="status"></p>
     <div class="debug-panel" id="debugPanel"></div>
+    
   </div>
+  
 
-  <script src="https://unpkg.com/arweave@latest/bundles/web.bundle.min.js"></script>
+  <script src="https://unpkg.com/arweave@1.15.7/bundles/web.bundle.min.js"></script>
   <script src="dist/ar-io-bundle.js"></script>
   <script src="dist/aoconnect-bundle.js"></script>
   <script src="src/index.js"></script>

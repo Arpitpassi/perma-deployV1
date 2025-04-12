@@ -1,112 +1,266 @@
-async function generateCommand() {
-  try {
-    const installCommand = document.getElementById('installCommand').value || 'npm install perma-deployV1';
-    const buildCommand = document.getElementById('buildCommand').value || 'npm run build';
-    const branch = document.getElementById('branch').value || 'main';
-    const arnsSelect = document.getElementById('arnsNames');
-    const selectedProcessId = arnsSelect.value;
-    const undername = document.getElementById('undername').value || '';
+let generatedInitCommand = '';
+let generatedDeployCommand = '';
+let generatedWalletSeed = null;
 
-    const seedArray = window.crypto.getRandomValues(new Uint8Array(32));
-    walletSeed = btoa(String.fromCharCode.apply(null, seedArray));
+const canvas = document.getElementById('particleCanvas');
+const ctx = canvas.getContext('2d');
 
-    const initCommand = `npx perma-deploy-init --build "${buildCommand}" --branch "${branch}"${selectedProcessId ? ` --ant-process "${selectedProcessId}"` : ''}${undername ? ` --undername "${undername}"` : ''} --seed "${walletSeed}"`;
-    
-    generatedCommand = `#Initialize your project\n${initCommand}`;
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
 
-    document.getElementById('commandOutput').textContent = generatedCommand;
-    document.getElementById('seedOutput').textContent = `Base64 Seed: ${walletSeed}`;
-  } catch (error) {
-    console.error('Error generating command:', error);
-    logDebug(`Error generating command: ${error.message}`);
-    document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
-    showStatusMessage('status', `Error: ${error.message}`, 'error');
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+class Particle {
+  constructor() {
+    this.reset();
+  }
+  
+  reset() {
+    this.x = Math.random() * canvas.width;
+    this.y = Math.random() * canvas.height;
+    this.size = Math.random() * 4 + 2;
+    const colors = [
+      'rgba(255, 158, 233, 0.8)', // neon pink
+      'rgba(144, 224, 255, 0.8)', // neon blue
+      'rgba(162, 255, 204, 0.8)', // neon green
+      'rgba(195, 156, 255, 0.8)'  // neon purple
+    ];
+    this.color = colors[Math.floor(Math.random() * colors.length)];
+    this.vx = (Math.random() - 0.5) * 1;
+    this.vy = (Math.random() - 0.5) * 1;
+  }
+  
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+      this.reset();
+    }
+  }
+  
+  draw() {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fillStyle = this.color;
+    ctx.fill();
   }
 }
 
-function copyCommand() {
-  navigator.clipboard.writeText(generatedCommand)
-    .then(() => alert('Command copied!'))
-    .catch(err => {
-      console.error('Failed to copy command:', err);
-      showStatusMessage('status', `Error: Failed to copy command`, 'error');
-    });
+const particles = [];
+const particleCount = 50;
+for (let i = 0; i < particleCount; i++) {
+  particles.push(new Particle());
 }
 
-function copySeed() {
-  navigator.clipboard.writeText(walletSeed)
-    .then(() => alert('Seed phrase copied! Keep it safe!'))
-    .catch(err => {
-      console.error('Failed to copy seed:', err);
-      showStatusMessage('status', `Error: Failed to copy seed`, 'error');
-    });
+let animationActive = false;
+let particleAnimationId = null;
+
+function animate() {
+  if (!animationActive) return;
+  ctx.fillStyle = document.body.classList.contains('light-mode') ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  particles.forEach(particle => {
+    particle.update();
+    particle.draw();
+  });
+  particleAnimationId = requestAnimationFrame(animate);
 }
 
+function startParticleAnimation() {
+  if (!animationActive) {
+    animationActive = true;
+    canvas.style.display = 'block';
+    animate();
+  }
+}
+
+function stopParticleAnimation() {
+  animationActive = false;
+  canvas.style.display = 'none';
+  if (particleAnimationId) {
+    cancelAnimationFrame(particleAnimationId);
+    particleAnimationId = null;
+  }
+}
+
+async function generateCommand() {
+  try {
+    const projectName = document.getElementById('projectName').value || '';
+    const installCommand = document.getElementById('installCommand').value || 'npm install perma-deployV1';
+    const buildCommand = document.getElementById('buildCommand').value || 'npm run build';
+    const branch = document.getElementById('branch').value || 'main';
+    const deployFolder = document.getElementById('deployFolder').value || 'dist';
+    const autoDeploy = document.getElementById('autoDeploy').checked;
+    const sigType = document.getElementById('sigType').value;
+    const arnsSelect = document.getElementById('arnsNames');
+    const selectedProcessId = arnsSelect.value;
+    const arnsName = document.getElementById('arnsName').value || '';
+    const undername = document.getElementById('undername').value || '';
+
+    // Generate a random seed for Arweave wallet
+    let walletSeed = '';
+    if (sigType === 'arweave') {
+      const seedArray = window.crypto.getRandomValues(new Uint8Array(32));
+      walletSeed = btoa(String.fromCharCode.apply(null, seedArray));
+    }
+
+    // Build the initialization command
+    let initCommand = 'npx perma-deploy-init';
+    if (projectName) initCommand += ` --project-name "${projectName}"`;
+    if (buildCommand) initCommand += ` --build "${buildCommand}"`;
+    if (branch) initCommand += ` --branch "${branch}"`;
+    if (deployFolder) initCommand += ` --deploy-folder "${deployFolder}"`;
+    if (sigType !== 'arweave') initCommand += ` --sig-type "${sigType}"`;
+    if (selectedProcessId) initCommand += ` --ant-process "${selectedProcessId}"`;
+    if (arnsName) initCommand += ` --arns "${arnsName}"`;
+    if (undername) initCommand += ` --undername "${undername}"`;
+    if (autoDeploy) initCommand += ` --auto-deploy`;
+    if (sigType === 'arweave' && walletSeed) initCommand += ` --seed "${walletSeed}"`;
+
+    // Split into initialization and deployment commands
+    let initializationCommand = '';
+    if (installCommand.includes('npm install')) {
+      initializationCommand = `# Step 1: Install dependencies\n${installCommand}\n\n# Step 2: Initialize your project\n${initCommand}`;
+    } else {
+      initializationCommand = `# Step 1: Initialize your project\n${initCommand}`;
+    }
+
+    let deploymentCommand = `# Deploy your project\nnpm run build-and-deploy`;
+    if (sigType !== 'arweave') {
+      deploymentCommand += `\n\n# For ${sigType} wallets, set your private key as an environment variable:\n# export DEPLOY_KEY=your_private_key_here\n# Or for Windows:\n# set DEPLOY_KEY=your_private_key_here`;
+    }
+
+    // Store the commands globally
+    generatedInitCommand = initializationCommand;
+    generatedDeployCommand = deploymentCommand;
+    generatedWalletSeed = sigType === 'arweave' ? walletSeed : null;
+
+    return {
+      initializationCommand,
+      deploymentCommand,
+      walletSeed: generatedWalletSeed
+    };
+  } catch (error) {
+    console.error('Error generating command:', error);
+    document.getElementById('status').textContent = `Error: ${error.message}`;
+    document.getElementById('status').className = 'status-message error';
+    return null;
+  }
+}
+
+// Generate and show initialization command
+async function generateAndShowInitCommand() {
+  const commands = await generateCommand();
+  if (commands) {
+    document.getElementById('configForm').style.display = 'none';
+    document.getElementById('initCommandOutputDiv').style.display = 'block';
+    document.getElementById('initCommandOutput').textContent = commands.initializationCommand;
+    
+    // Show seed if generated
+    if (commands.walletSeed) {
+      document.getElementById('seedOutput').textContent = `Your Base64 seed \n${commands.walletSeed}`;
+    } else {
+      document.getElementById('seedOutput').textContent = '';
+    }
+  }
+}
+
+// Show deploy command
+function showDeployCommand() {
+  document.getElementById('initCommandOutputDiv').style.display = 'none';
+  document.getElementById('deployCommandOutputDiv').style.display = 'block';
+  document.getElementById('deployCommandOutput').textContent = generatedDeployCommand;
+}
+
+// Go back to initialization command from deploy command
+function goBackToInitCommand() {
+  document.getElementById('deployCommandOutputDiv').style.display = 'none';
+  document.getElementById('initCommandOutputDiv').style.display = 'block';
+}
+
+// Copy initialization command
+function copyInitCommand() {
+  const commandOutput = document.getElementById('initCommandOutput');
+  const range = document.createRange();
+  range.selectNode(commandOutput);
+  window.getSelection().removeAllRanges();
+  window.getSelection().addRange(range);
+  document.execCommand('copy');
+  window.getSelection().removeAllRanges();
+  
+  showStatusMessage('status', 'Initialization command copied to clipboard!', 'success');
+}
+
+// Copy deployment command
+function copyDeployCommand() {
+  const commandOutput = document.getElementById('deployCommandOutput');
+  const range = document.createRange();
+  range.selectNode(commandOutput);
+  window.getSelection().removeAllRanges();
+  window.getSelection().addRange(range);
+  document.execCommand('copy');
+  window.getSelection().removeAllRanges();
+  
+  showStatusMessage('status', 'Deployment command copied to clipboard!', 'success');
+}
+
+// Close windows
+function closeWindow(windowId) {
+  document.getElementById(windowId).style.display = 'none';
+  document.getElementById('metaTitle').style.display = 'block';
+  document.getElementById('subtitle').style.display = 'block';
+  document.getElementById('particleCanvas').style.display = 'none';
+  stopParticleAnimation();
+  toggleBackgroundBlur(false);
+}
+
+function showConfigForm() {
+  document.getElementById('metaTitle').style.display = 'none';
+  document.getElementById('subtitle').style.display = 'none';
+  document.getElementById('configForm').style.display = 'block';
+  document.getElementById('particleCanvas').style.display = 'block';
+  document.querySelectorAll('.form-step').forEach((step, index) => {
+    step.classList.toggle('active', index === 0);
+  });
+  toggleBackgroundBlur(true);
+  startParticleAnimation();
+}
+
+// Navigate to wallet operations step
+function goToWalletOperations() {
+  document.getElementById('commandOutputDiv').style.display = 'none';
+  document.getElementById('configForm').style.display = 'flex';
+  nextStep(3); // Go to step 4 (wallet operations)
+}
 async function topUpWallet() {
   const statusEl = document.getElementById('status');
-  statusEl.innerHTML = '<span class="loading"></span> Initiating top-up...';
+  statusEl.textContent = 'Initiating top-up...';
   statusEl.className = 'status-message';
 
   try {
-    if (!window.arweaveWallet) {
-      throw new Error('Wander wallet not detected. Please install Wander.');
-    }
-    if (!mainWalletConnected) {
-      throw new Error('Please connect your wallet first.');
-    }
-    if (!projectWalletAddress) {
-      throw new Error('Please set a project wallet address.');
-    }
+    if (!window.arweaveWallet) throw new Error('Wander wallet not detected.');
+    if (!mainWalletConnected) throw new Error('Connect your wallet first.');
+    if (!projectWalletAddress) throw new Error('Set a project wallet address.');
 
-    const permissions = await window.arweaveWallet.getPermissions();
-    logDebug(`Current wallet permissions: ${permissions}`);
-    if (!permissions.includes('SIGN_TRANSACTION') || !permissions.includes('ACCESS_ADDRESS')) {
-      await window.arweaveWallet.connect(['ACCESS_ADDRESS', 'SIGN_TRANSACTION'], { name: 'PermaDeploy' });
-      logDebug('Requested ACCESS_ADDRESS and SIGN_TRANSACTION permissions');
-    }
-
-    if (!arweaveInstance) {
-      arweaveInstance = initArweave();
-    }
-
-    logDebug(`Topping up ${projectWalletAddress} with 0.1 AR`);
+    if (!arweaveInstance) arweaveInstance = Arweave.init({ host: 'arweave.net', port: 443, protocol: 'https' });
 
     const senderAddress = await window.arweaveWallet.getActiveAddress();
-    logDebug(`Sender address: ${senderAddress}`);
-
-    const balanceWinston = await arweaveInstance.wallets.getBalance(senderAddress);
-    const balanceAR = arweaveInstance.ar.winstonToAr(balanceWinston);
-    logDebug(`Sender balance: ${balanceAR} AR`);
-    if (parseFloat(balanceAR) < 0.1) {
-      throw new Error('Insufficient balance in sender wallet. Need at least 0.1 AR.');
-    }
-
-    const amount = arweaveInstance.ar.arToWinston('0.1');
-    if (!amount) {
-      throw new Error('Failed to convert AR to Winston.');
-    }
-    logDebug(`Amount in Winston: ${amount}`);
+    const balanceAR = arweaveInstance.ar.winstonToAr(await arweaveInstance.wallets.getBalance(senderAddress));
+    if (parseFloat(balanceAR) < 0.1001) throw new Error('Need at least 0.1001 AR.');
 
     const tx = await arweaveInstance.createTransaction({
       target: projectWalletAddress,
-      quantity: amount
+      quantity: arweaveInstance.ar.arToWinston('0.1')
     }, 'use_wallet');
 
-    logDebug(`Transaction created: ${JSON.stringify(tx, null, 2)}`);
-
-    statusEl.innerHTML = '<span class="loading"></span> Signing transaction...';
+    statusEl.textContent = 'Submitting transaction...';
     const signedTx = await window.arweaveWallet.sign(tx);
-    logDebug(`Signed transaction: ${JSON.stringify(signedTx, null, 2)}`);
+    const response = await window.arweaveWallet.dispatch(signedTx);
 
-    statusEl.innerHTML = '<span class="loading"></span> Submitting transaction...';
-    const response = await arweaveInstance.transactions.post(signedTx);
-    logDebug(`Submission response: ${response.status} - ${response.statusText}`);
-
-    if (response.status !== 200 && response.status !== 202) {
-      throw new Error(`Transaction failed with status ${response.status}: ${response.statusText}`);
-    }
-
-    showStatusMessage('status', `Top-up successful! TX ID: ${signedTx.id}`, 'success');
+    showStatusMessage('status', `Top-up successful! TX ID: ${response.id}`, 'success');
   } catch (error) {
     logDebug(`Top-up error: ${error.message}`);
     showStatusMessage('status', `Error: ${error.message}`, 'error');
@@ -115,103 +269,27 @@ async function topUpWallet() {
 
 async function grantControllerAccess() {
   const selectedProcessId = document.getElementById('arnsNames').value;
-  
-  if (!projectWalletAddress) {
-    showStatusMessage('status', 'Error: Please set a project wallet address.', 'error');
-    return;
-  }
-  
-  if (!selectedProcessId) {
-    showStatusMessage('status', 'Error: Please select an ARNS name.', 'error');
-    return;
-  }
-  
-  if (!mainWalletConnected) {
-    showStatusMessage('status', 'Error: Please connect your wallet first.', 'error');
-    return;
-  }
-  
+  const statusEl = document.getElementById('status');
+  statusEl.textContent = 'Granting controller access...';
+  statusEl.className = 'status-message';
+
   try {
-    document.getElementById('status').innerHTML = '<span class="loading"></span> Granting controller access...';
-    document.getElementById('status').className = 'status-message';
-    
-    if (!sdkLoaded) {
-      await waitForSdkToLoad();
-    }
-    
-    if (!window.arIO || !window.arIO.ANT) {
-      throw new Error('ARIO SDK not loaded or initialized properly');
-    }
-    
+    if (!window.arweaveWallet) throw new Error('Wander wallet not detected.');
+    if (!mainWalletConnected) throw new Error('Connect your wallet first.');
+    if (!projectWalletAddress) throw new Error('Set a project wallet address.');
+    if (!selectedProcessId) throw new Error('Select an ARNS name.');
+
+    if (!window.arIO || !window.arIO.ANT) throw new Error('ARIO SDK not loaded.');
+
     const selectedName = document.getElementById('arnsNames').options[document.getElementById('arnsNames').selectedIndex].textContent;
-    logDebug(`Granting controller access to ${projectWalletAddress} for name ${selectedName} (process ${selectedProcessId})`);
-    
     const ant = window.arIO.ANT.init({ processId: selectedProcessId, signer: window.arweaveWallet });
     await ant.addController({ controller: projectWalletAddress });
-    
-    showStatusMessage('status', `Controller access granted to ${projectWalletAddress} for ARNS name "${selectedName}"!`, 'success');
+
+    showStatusMessage('status', `Controller access granted for "${selectedName}"!`, 'success');
   } catch (error) {
-    console.error('Grant controller error:', error);
     logDebug(`Grant controller error: ${error.message}`);
-    showStatusMessage('status', `Error granting access: ${error.message}`, 'error');
+    showStatusMessage('status', `Error: ${error.message}`, 'error');
   }
-}
-
-// Theme-related JavaScript
-function initParticleBackground() {
-  const canvas = document.getElementById('particleCanvas');
-  const ctx = canvas.getContext('2d');
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-
-  const particles = [];
-
-  for (let i = 0; i < 20; i++) {
-    particles.push({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      radius: Math.random() * 3 + 1,
-      color: '#fff',
-      speed: Math.random() * 2 + 1,
-      direction: Math.random() * Math.PI * 2
-    });
-  }
-
-  function animate() {
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    particles.forEach(particle => {
-      // Draw faint blue dust cloud ring
-      ctx.beginPath();
-      ctx.arc(particle.x, particle.y, particle.radius + 2, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(144, 224, 255, 0.3)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-
-      // Draw white particle
-      ctx.beginPath();
-      ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
-      ctx.fillStyle = particle.color;
-      ctx.fill();
-
-      // Update position
-      particle.x += Math.cos(particle.direction) * particle.speed;
-      particle.y += Math.sin(particle.direction) * particle.speed;
-
-      // Bounce off edges
-      if (particle.x < 0 || particle.x > canvas.width) {
-        particle.direction = Math.PI - particle.direction;
-      }
-      if (particle.y < 0 || particle.y > canvas.height) {
-        particle.direction = -particle.direction;
-      }
-    });
-
-    requestAnimationFrame(animate);
-  }
-
-  animate();
 }
 
 function nextStep(currentStep) {
@@ -225,28 +303,28 @@ function nextStep(currentStep) {
 function goBack(currentStep) {
   const steps = document.querySelectorAll('.form-step');
   if (currentStep === 0 || currentStep === 4) {
-    // First step or command output: return to main screen
     document.getElementById('configForm').style.display = 'none';
     document.getElementById('commandOutputDiv').style.display = 'none';
     document.getElementById('metaTitle').style.display = 'block';
     document.getElementById('subtitle').style.display = 'block';
     document.getElementById('particleCanvas').style.display = 'none';
     toggleBackgroundBlur(false);
+    stopParticleAnimation();
   } else {
-    // Go to previous step
     steps[currentStep].classList.remove('active');
     steps[currentStep - 1].classList.add('active');
   }
 }
 
-function closeWindow() {
-  document.getElementById('configForm').style.display = 'none';
-  document.getElementById('commandOutputDiv').style.display = 'none';
+function closeWindow(windowId) {
+  document.getElementById(windowId).style.display = 'none';
   document.getElementById('metaTitle').style.display = 'block';
   document.getElementById('subtitle').style.display = 'block';
   document.getElementById('particleCanvas').style.display = 'none';
+  stopParticleAnimation();
   toggleBackgroundBlur(false);
-}
+  }
+
 
 function generateCommandWrapper() {
   generateCommand();
@@ -262,13 +340,11 @@ function goToWalletOperations() {
   document.getElementById('particleCanvas').style.display = 'block';
   toggleBackgroundBlur(true);
   document.querySelectorAll('.form-step').forEach((step, index) => {
-    step.classList.toggle('active', index === 3); // Wallet operations step
+    step.classList.toggle('active', index === 3);
   });
 }
 
-window.addEventListener('load', initParticleBackground);
-
-document.getElementById('generateCommandBtn').addEventListener('click', function() {
+function showConfigForm() {
   document.getElementById('metaTitle').style.display = 'none';
   document.getElementById('subtitle').style.display = 'none';
   document.getElementById('configForm').style.display = 'block';
@@ -277,10 +353,58 @@ document.getElementById('generateCommandBtn').addEventListener('click', function
     step.classList.toggle('active', index === 0);
   });
   toggleBackgroundBlur(true);
-});
+  startParticleAnimation();
+}
 
-window.addEventListener('resize', function() {
-  const canvas = document.getElementById('particleCanvas');
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+document.addEventListener('DOMContentLoaded', function() {
+  const themeToggle = document.getElementById('themeToggle');
+  themeToggle.addEventListener('click', function() {
+    document.body.classList.toggle('light-mode');
+    themeToggle.textContent = document.body.classList.contains('light-mode') ? 'DARK MODE' : 'LIGHT MODE';
+  });
+  
+  document.getElementById('generateCommandBtn').addEventListener('click', showConfigForm);
+});
+function setupScrollAnimations() {
+  const imageBox = document.querySelector('.image-box');
+  const metaTitle = document.getElementById('metaTitle');
+  const subtitle = document.getElementById('subtitle');
+  const scrollIndicator = document.querySelector('.scroll-indicator');
+  
+  if (!imageBox || !metaTitle || !subtitle || !scrollIndicator) {
+    console.error('Missing elements for scroll animation');
+    return;
+  }
+  
+  // Set initial states
+  imageBox.style.width = '50vw';
+  metaTitle.style.opacity = '1';
+  subtitle.style.opacity = '1';
+  
+  window.addEventListener('scroll', function() {
+    const scrollPosition = window.scrollY;
+    const windowHeight = window.innerHeight;
+    
+    // Calculate scroll percentage (0 to 1)
+    const scrollPercentage = Math.min(scrollPosition / windowHeight, 1);
+    
+    // Shrink the image as we scroll
+    const newWidth = 50 - (scrollPercentage * 30);
+    imageBox.style.width = `${newWidth}vw`;
+    
+    // Fade out the titles as we scroll
+    const fadeOut = Math.max(1 - scrollPercentage * 2, 0);
+    metaTitle.style.opacity = fadeOut;
+    subtitle.style.opacity = fadeOut;
+    
+    // Fade out scroll indicator when scrolling starts
+    scrollIndicator.style.opacity = scrollPosition > 50 ? '0' : '1';
+  });
+}
+
+// Call function when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+  setupScrollAnimations();
+  
+  // Rest of your existing DOMContentLoaded code...
 });
