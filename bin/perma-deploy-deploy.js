@@ -7,7 +7,7 @@ const Arweave = require('arweave');
 const { TurboFactory } = require('@ardrive/turbo-sdk');
 const yargs = require('yargs');
 const { hideBin } = require('yargs/helpers');
-const ANT = require('@ar.io/sdk');
+const { ANT, ArweaveSigner } = require('@ar.io/sdk');
 
 // Function to retrieve commit hash
 function getCommitHash() {
@@ -148,8 +148,9 @@ async function main() {
     manifestTxId = await uploadFile(manifestPath, dryRun, turbo, 'application/x.arweave-manifest+json');
     console.log(`Manifest uploaded with ID: ${manifestTxId}`);
     
-    if (config.antProcess) {
-      const ant = ANT.init({ processId: config.antProcess, signer: { wallet } });
+    if (config.antProcess)  {
+     const signer = new ArweaveSigner(wallet)
+      const ant = ANT.init({ processId: config.antProcess, signer});
       const commitHash = getCommitHash();
       // Update the ANT record (assumes the signer is a controller or owner)
       await ant.setUndernameRecord(
