@@ -1,146 +1,196 @@
-# Anantweb
+# ANANTWEB - Deploy to Arweave
 
-Anantweb is a tool that makes it easy to deploy your applications or websites to the Arweave network, a decentralized storage platform where data is stored permanently. Our project belives in the idea of giving back the power of deploying hosting and using a website all in the hands of the developers themselves, so that they dont have rely on a server hosting their website that might crash or delete their content. With Arweave and Anantweb you have the power to let your work be immortalized and the entire process handled by you and only you with absolute ease.
+A web-based tool to simplify deploying projects to the Arweave permaweb. This application provides an intuitive interface for configuring projects, generating deployment commands, and managing Arweave wallets and ARNS (Arweave Name System) processes.
 
+## Features
 
-With Anantweb, you can:
-
-- Initialize a project and generate a wallet.
-- Fund the wallet for deployments.
-- Set up a custom domain using ARNS (Arweave Name Service).
-
-This README provides step-by-step instructions to get you started.
-
-## Introduction
-
-- *What is Arweave?*  
-  Arweave is a decentralized network that stores data forever. Once uploaded, your content is permanently available on the web.
-
-- *What is ARNS?*  
-  ARNS (Arweave Name Service) lets you link a human-readable name (like "myapp") to your Arweave content, making it easier to access.
-
-- *Why use PermaDeploy?*  
-  PermaDeploy simplifies deploying to Arweave with a user-friendly interface and command-line tools, handling wallet setup, funding, and ARNS configuration.
+- **Wallet Integration**: Connect to Arweave wallets (e.g., Wander) or Ethereum/Polygon wallets for deployment.
+- **Project Configuration**: Easily configure project details like build commands, branches, and deploy folders.
+- **ARNS Support**: Link deployments to ARNS names and undernames for human-readable URLs.
+- **Command Generation**: Generate initialization and deployment commands for use with perma-deploy tools.
+- **Wallet Operations**: Fund project wallets and grant controller access to ARNS processes.
+- **Automatic Deployment**: Optionally set up auto-deployment on git commits.
+- **Responsive UI**: A sleek interface with light/dark mode and particle animations.
 
 ## Prerequisites
 
-Before you begin, make sure you have:
+Before using ANANTWEB, ensure you have:
 
-- A modern web browser (e.g., Chrome, Firefox).
-- The [Wander wallet extension](https://www.wander.xyz/) (formerly ArConnect) installed in your browser.
-- [Node.js](https://nodejs.org/) and [npm](https://www.npmjs.com/) installed on your system (version 18 or higher).
+- A modern web browser (Chrome, Firefox, etc.).
+- An Arweave wallet (e.g., Wander) or an Ethereum/Polygon wallet (e.g., MetaMask, though compatibility is limited to specific operations).
+- Node.js installed for running deployment commands.
+- A funded Arweave wallet for deployments (minimum ~0.1 AR for small files; more for larger uploads).
+- (Optional) Git installed for automatic deployment setups.
 
-## Installation
+## Getting Started
 
-Follow these steps to set up PermaDeploy:
+### 1. Access the Application
 
-1. *Clone the Repository*  
-   Download the project files to your computer by cloning the repository or extracting the provided files.
+**Option A: Hosted Version**
+Visit the hosted version at [Insert hosted URL here, e.g., https://anantweb.arweave.app] (if applicable).
 
-2. *Install Dependencies for the Main Tool*  
-   Open a terminal, navigate to the project directory (where the first package.json with "name": "perma-deploy" is located), and run:
+**Option B: Run Locally**
+Clone the repository and serve the application locally:
 
-   bash
-   npm install
-   
+```bash
+git clone https://github.com/[your-username]/anantweb.git
+cd anantweb
+npm install
+npm start
+```
 
-3. *Install Dependencies for the Website*  
-   If there’s a separate website folder (containing the second package.json with "name": "website"), navigate to it and install its dependencies:
+Open http://localhost:3000 in your browser (assumes you have a basic Node.js server setup, not included in provided code).
 
-   bash
-   cd website
-   npm install
-   
+### 2. Connect Your Wallet
 
-4. *Build the Website (Optional)*  
-   If you’re using the provided HTML interface, build the necessary JavaScript bundles. From the main project directory, run:
+1. Click **Connect Wallet** (Step 1).
+2. Select your wallet type (Arweave, Ethereum, or Polygon).
+3. Approve the connection in your wallet (e.g., Wander for Arweave).
+4. Once connected, your ARNS processes (if any) will populate the dropdown.
 
-   bash
-   npm run build
-   
+### 3. Configure Your Project
 
-   This creates a dist/aoconnect-bundle.js file used by the HTML interface.
+1. Click **Generate Command** (Step 2).
+2. Fill out the configuration form:
+   - **Project Name** (optional): Name your project.
+   - **Branch**: Git branch to deploy (e.g., main).
+   - **Install Command**: Dependency installation command (e.g., npm install).
+   - **Build Command**: Build command (e.g., npm run build).
+   - **Deploy Folder**: Output folder (e.g., dist).
+   - **Auto-Deploy**: Check to enable automatic deployment on commits.
+   - **Wallet Type**: Choose Arweave, Ethereum, or Polygon.
+   - **ANT Process**: Select an ARNS process (if applicable).
+   - **ARNS Name** (optional): Specify an ARNS name (e.g., myapp).
+   - **Undername** (optional): Specify an undername (e.g., dev).
+3. Click Next through the steps and Generate to create the commands.
 
-5. *Serve the Website (Optional)*  
-   To use the web interface, serve the HTML file (e.g., using a local server like npx serve or by opening it in a browser).
+### 4. Initialize Your Project
 
-## Usage
+1. Copy the Initialization Command from the output. Example:
 
-PermaDeploy has two main components: a command-line tool (perma-deploy) and a web interface. Below are the steps to use the web interface, which guides you through the process.
+```bash
+npm install perma-deployV1
+npx perma-deploy-init --project-name "my-project" --build "npm run build" --branch "main" --deploy-folder "dist" --auto-deploy --seed "your-base64-seed"
+```
 
-### Step 1: Initialize Your Project
+2. Run the command in your project's root directory.
+   - This sets up a `.perma-deploy` directory with configuration.
+   - For Arweave wallets, it generates a wallet file in `~/.permaweb/<project-name>/wallet.json`.
+   - Updates package.json with deploy and build-and-deploy scripts.
+   - Optionally sets up a git pre-commit hook for auto-deployment.
 
-1. *Open the Web Interface*  
-   Open the provided HTML file (index.html) in your browser.
+3. If using an Arweave wallet, note the generated wallet address and fund it:
+   - Fund with at least 0.1 AR (or Turbo credits) for small deployments.
+   - Use the **Top Up Project Wallet** button to send 0.1 AR to the project wallet (requires main wallet connection).
 
-2. *Enter Project Details*  
-   In the "Initialize Your Project" section, fill in:
-   - *Build Command*: How your project builds (e.g., npm run build).
-   - *Branch to Deploy*: The git branch to deploy (e.g., main).
-   - *ARNS Name* (optional): A custom domain name (e.g., myapp).
-   - *ARNS Undername* (optional): A subdomain (e.g., dev).
+4. If using ARNS, grant controller access to the project wallet:
+   - Select an ANT process and click **Grant Controller Access**.
 
-3. *Generate Wallet and Command*  
-   Click *"GENERATE WALLET AND COMMAND"*. You’ll see:
-   - A command to run in your project’s root directory.
-   - A project wallet address.
-   - A seed phrase (in base64 format).
+### 5. Deploy Your Project
 
-4. *Copy and Run the Command*  
-   - Click *"COPY COMMAND"* and paste it into your terminal, in your project’s root directory.
-   - Run the command to set up your project for deployment (e.g., npx perma-deploy-init --build "npm run build" --branch "main" --seed "your-seed-here").
-   - Example output might look like:
-     bash
-     npx perma-deploy-init --build "npm run build" --branch "main" --seed "SGVsbG8gV29ybGQ="
-     
+1. Copy the Deploy Command from the output. Example:
 
-5. *Save Wallet Details*  
-   - Copy the *wallet address* and *seed phrase* (using the "COPY" buttons) and store them securely. You’ll need them later.
+```bash
+npm run build-and-deploy
+```
 
-6. *Proceed*  
-   Click *"PROCEED TO STEP 2"* to move forward.
+2. Run the command in your project directory.
+   - Builds the project using the specified build command.
+   - Uploads the deploy-folder (e.g., dist) to Arweave.
+   - Updates the ARNS record (if configured) with the new transaction ID.
 
-*Note*: Files under 100KB can be deployed for free without funding. Test your setup first!
+3. View your deployment at:
+   - `https://arweave.net/[TX_ID]` (transaction ID from deployment output).
+   - Or via ARNS: `https://[undername].[arns-name].ar` (e.g., dev.myapp.ar).
 
-### Step 2: Fund Wallet and Setup ARNS
+### 6. Automatic Deployment (Optional)
 
-1. *Connect Your Wander Wallet*  
-   In the "Fund Wallet and Setup ARNS" section, click *"CONNECT WANDER WALLET"* to link your personal Wander wallet.
+If you enabled Auto-Deploy, every git commit on the specified branch will trigger:
 
-2. *Fund the Project Wallet*  
-   - Ensure your Wander wallet has at least 0.1 AR.
-   - Click *"TOP UP PROJECT WALLET (0.1 AR)"* to send 0.1 AR to the project wallet generated in Step 1.
+```bash
+npm run build-and-deploy
+```
 
-3. *Set Up ARNS (Optional)*  
-   - If you entered an ARNS name in Step 1, select it from the dropdown (it appears after connecting your wallet).
-   - Click *"GRANT CONTROLLER ACCESS"* to let the project wallet manage the ARNS record.
+Ensure your project wallet is funded to avoid failed deployments.
 
-4. *Deploy Your Project*  
-   - After funding, run this command in your project’s root directory to deploy:
-     bash
-     npx perma-deploy-deploy
-     
-   - Repeat this command whenever you want to deploy a new version.
+## Deployment Information
+
+### Configuration Storage:
+- Project config: `./.perma-deploy/config.json`.
+- Arweave wallet: `~/.permaweb/<project-name>/wallet.json`.
+
+### Signer Types:
+- **Arweave**: Uses a generated wallet (requires funding).
+- **Ethereum/Polygon**: Set DEPLOY_KEY environment variable with your private key.
+
+```bash
+export DEPLOY_KEY=your_private_key_here  # Linux/Mac
+set DEPLOY_KEY=your_private_key_here     # Windows
+```
+
+### ARNS Integration:
+- Requires an ANT process ID (owned or controlled by your wallet).
+- Updates undername records with deployment transaction IDs.
+
+### Turbo Integration:
+- Uses @ardrive/turbo-sdk for efficient uploads.
+- Supports Arweave, Ethereum, and Polygon signers.
+
+## Project Structure
+
+```
+anantweb/
+├── dist/                    # Bundled JS dependencies
+├── src/
+│   ├── index.js             # Main logic (wallet, commands, UI)
+│   ├── style.css            # Styles for the interface
+├── index.html               # Main HTML file
+├── perma-deploy-init.js     # CLI for project initialization
+├── perma-deploy-deploy.js   # CLI for deployment
+├── README.md                # This file
+```
 
 ## Troubleshooting
 
-- *Wallet Won’t Connect*  
-  Ensure the Wander wallet extension is installed and enabled. Refresh the page and try again.
+### Wallet Connection Issues:
+- Ensure Wander is installed and unlocked for Arweave wallets.
+- Check browser console or debug panel (index.js:logDebug) for errors.
 
-- *Deployment Fails*  
-  Check that the project wallet has enough AR (at least 0.1 AR for larger files). Top it up if needed.
+### SDK Loading Errors:
+- Refresh the page if AR.IO or Arweave SDKs fail to load.
+- Verify internet connectivity (scripts load from unpkg.com).
 
-- *ARNS Not Working*  
-  Verify the ARNS name is registered in your Wander wallet and that controller access was granted.
+### Deployment Fails:
+- Check if the project wallet is funded (Arweave).
+- Verify DEPLOY_KEY for Ethereum/Polygon wallets.
+- Ensure deploy-folder exists and is not empty.
+
+### ARNS Not Updating:
+- Confirm the wallet has controller/owner access to the ANT process.
+- Use Grant Controller Access if needed.
+
+### Auto-Deploy Not Triggering:
+- Verify `.git/hooks/pre-commit` exists and is executable (`chmod +x`).
+- Check git initialization (`git init`).
 
 ## Contributing
 
-We welcome contributions! If you have ideas or fixes:
+Contributions are welcome! To contribute:
+
 1. Fork the repository.
-2. Make your changes.
-3. Submit a pull request or open an issue on the project’s GitHub page.
+2. Create a feature branch (`git checkout -b feature-name`).
+3. Commit changes (`git commit -m "Add feature"`).
+4. Push to the branch (`git push origin feature-name`).
+5. Open a Pull Request.
+
+Please include tests and update documentation as needed.
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details (if provided; otherwise, assumed MIT based on common practice).
+This project is licensed under the [License type to be added].
 
+## Acknowledgements
+
+- Built with Arweave and AR.IO.
+- Uses @ardrive/turbo-sdk for uploads and @ar.io/sdk for ARNS management.
+- Inspired by the need for simple permaweb deployment tools.
