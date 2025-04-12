@@ -15,6 +15,7 @@ async function main() {
     .option('undername', { type: 'string', describe: 'ARNS undername (e.g., dev)' })
     .option('seed', { type: 'string', describe: 'Base64 encoded 32-byte seed', demandOption: true })
     .argv;
+    
 
   const projectName = argv['project-name'];
 
