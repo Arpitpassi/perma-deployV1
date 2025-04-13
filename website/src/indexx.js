@@ -152,12 +152,22 @@ async function generateCommand() {
 }
 
 
-async function showHelpSection() {
-  const helpSection = document.getElementById('helpSection');
-  if (helpSection) {
-    helpSection.style.display = 'block';
-    document.body.classList.add('blur-background');
-  }
+function showHelpSection() {
+  document.getElementById('metaTitle').style.display = 'none';
+  document.getElementById('subtitle').style.display = 'none';
+  document.getElementById('helpSection').style.display = 'block';
+  document.getElementById('particleCanvas').style.display = 'block';
+  toggleBackgroundBlur(true);
+  startParticleAnimation();
+}
+
+function closeWindow(windowId) {
+  document.getElementById(windowId).style.display = 'none';
+  document.getElementById('metaTitle').style.display = 'block';
+  document.getElementById('subtitle').style.display = 'block';
+  document.getElementById('particleCanvas').style.display = 'none';
+  stopParticleAnimation();
+  toggleBackgroundBlur(false);
 }
 // Generate and show initialization command
 async function generateAndShowInitCommand() {
