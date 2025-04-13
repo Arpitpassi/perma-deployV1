@@ -14,7 +14,7 @@ A web-based tool to simplify deploying projects to the Arweave permaweb. This ap
 
 ## Prerequisites
 
-Before using ANANTWEB, ensure you have:
+Before using Nitya, ensure you have:
 
 - A modern web browser (Chrome, Firefox, etc.).
 - An Arweave wallet (e.g., Wander) or an Ethereum/Polygon wallet (e.g., MetaMask, though compatibility is limited to specific operations).
@@ -27,14 +27,14 @@ Before using ANANTWEB, ensure you have:
 ### 1. Access the Application
 
 **Option A: Hosted Version**
-Visit the hosted version at [Insert hosted URL here, e.g., https://anantweb.arweave.app] (if applicable).
+Visit the hosted version at [Insert hosted URL here, e.g., https://Nitya.arweave.app] (if applicable).
 
 **Option B: Run Locally**
 Clone the repository and serve the application locally:
 
 ```bash
-git clone https://github.com/[your-username]/anantweb.git
-cd anantweb
+git clone https://github.com/[your-username]/Nitya.git
+cd Nitya
 npm install
 npm start
 ```
@@ -139,7 +139,7 @@ set DEPLOY_KEY=your_private_key_here     # Windows
 ## Project Structure
 
 ```
-anantweb/
+Nitya/
 ├── dist/                    # Bundled JS dependencies
 ├── src/
 │   ├── index.js             # Main logic (wallet, commands, UI)
