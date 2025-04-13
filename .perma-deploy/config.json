@@ -1,0 +1,12 @@
+{
+  "projectName": "Nitya",
+  "walletPath": "/home/arpit/.permaweb/Nitya/wallet.json",
+  "buildCommand": "npm --version",
+  "deployBranch": "main",
+  "arnsName": "enginesoup",
+  "undername": "Nitya",
+  "antProcess": "SvcHmgBgdRi4mAAcpw4zVcHnhyWGOyZWIMM3c1ABaEA",
+  "deployFolder": "website",
+  "sigType": "arweave",
+  "walletAddress": "Xugmg9uyRTogo_NAx5WJrRjl5ro0seYkQtfhCrH7oL4"
+}

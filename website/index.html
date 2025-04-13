@@ -81,9 +81,6 @@
       <pre id="initCommandOutput"></pre>
       <button class="wallet-btn" onclick="copyInitCommand()">Copy Command</button>
       <pre id="seedOutput"></pre>
-      <div class="wallet-info-notice">
-        <p>Initialize your project and get its wallet address.</p>
-      </div>
       
       <!-- Wallet Operations Section -->
       <div class="wallet-operations-section">
@@ -94,8 +91,6 @@
         <button class="wallet-btn" id="topUpButton" onclick="topUpWallet()" disabled>Top Up Project Wallet (0.1 AR)</button>
         <button class="wallet-btn" id="grantButton" onclick="grantControllerAccess()" disabled>Grant Controller Access</button>
       </div>
-      
-      <button class="wallet-btn" onclick="showDeployCommand()">Show Deploy Command</button>
       <button class="wallet-btn" onclick="closeWindow('initCommandOutputDiv')">Back</button>
     </div>
     
@@ -233,7 +228,10 @@
 
   <script src="https://unpkg.com/arweave@1.15.7/bundles/web.bundle.min.js"></script>
   <script src="dist/ar-io-bundle.js"></script>
-  <script src="dist/aoconnect-bundle.js"></script>
+  <script type="module">
+    import * as aoconnect from 'https://unpkg.com/@permaweb/aoconnect@0.0.79/dist/index.js';
+    window.aoconnect = aoconnect; // Make it available globally
+  </script>
   <script src="src/index.js"></script>
   <script src="src/indexx.js"></script>
   

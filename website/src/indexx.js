@@ -163,12 +163,10 @@ async function generateAndShowInitCommand() {
     document.getElementById('initCommandOutputDiv').style.display = 'block';
     document.getElementById('initCommandOutput').textContent = commands.initializationCommand;
     
-    // Show seed if generated
-    if (commands.walletSeed) {
-      document.getElementById('seedOutput').textContent = `Your Base64 seed \n${commands.walletSeed}`;
-    } else {
-      document.getElementById('seedOutput').textContent = '';
-    }
+   
+
+      document.getElementById('seedOutput').textContent = 'Initialize your project and get its wallet address';
+    
   }
 }
 

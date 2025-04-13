@@ -69,13 +69,27 @@ function getCommitHash() {
 }
 
 async function main() {
+  // First, load config from file if it exists
+  let config = {};
+  const permaDeployDir = path.join(process.cwd(), '.perma-deploy');
+  const useConfigFile = fs.existsSync(permaDeployDir);
+  
+  if (useConfigFile) {
+    try {
+      config = JSON.parse(fs.readFileSync(path.join(permaDeployDir, 'config.json'), 'utf-8'));
+      console.log(`${colors.fg.blue}Using configuration from .perma-deploy/config.json${colors.reset}`);
+    } catch (error) {
+      console.error(`${colors.fg.red}Error reading config file: ${error.message}${colors.reset}`);
+      process.exit(1);
+    }
+  }
 
+  // Then parse command line arguments
   const argv = yargs(hideBin(process.argv))
     .option('deploy-folder', {
       alias: 'd',
       type: 'string',
       description: 'Folder to deploy.',
-      default: 'dist'
     })
     .option('dry-run', {
       type: 'boolean',
@@ -98,30 +112,16 @@ async function main() {
       type: 'string',
       description: 'Network for Ethereum-based signers.',
       choices: ['ethereum', 'polygon'],
-      default: 'ethereum'
     }).argv;
 
-  // Support both custom config and direct parameters
-  let config = {};
-  const permaDeployDir = path.join(process.cwd(), '.perma-deploy');
-  const useConfigFile = fs.existsSync(permaDeployDir);
-  
-  if (useConfigFile) {
-    try {
-      config = JSON.parse(fs.readFileSync(path.join(permaDeployDir, 'config.json'), 'utf-8'));
-      console.log(`${colors.fg.blue}Using configuration from .perma-deploy/config.json${colors.reset}`);
-    } catch (error) {
-      console.error(`${colors.fg.red}Error reading config file: ${error.message}${colors.reset}`);
-      process.exit(1);
-    }
-  }
-
-  // Merge config with command line arguments
-  const deployFolder = path.resolve(process.cwd(), argv['deploy-folder'] || config.deployFolder || 'dist');
-  const dryRun = argv['dry-run'] || false;
-  const antProcess = argv['ant-process'] || config.antProcess;
-  const undername = argv['undername'] || config.undername || '@';
-  const network = argv['network'] || config.network || 'ethereum';
+  // Priority: config first, then command line args as override
+  // This is the key change - we're now preferring config.json values over command line args
+  const deployFolder = path.resolve(process.cwd(), 
+    config.deployFolder || argv['deploy-folder'] || 'dist');
+  const dryRun = config.dryRun !== undefined ? config.dryRun : argv['dry-run'] || false;
+  const antProcess = config.antProcess || argv['ant-process'];
+  const undername = config.undername || argv['undername'] || '@';
+  const network = config.network || argv['network'] || 'arweave';
   const buildCommand = config.buildCommand || 'npm run build';
   const deployBranch = config.deployBranch || 'main';
 
@@ -147,12 +147,6 @@ async function main() {
   }
   if (!DEPLOY_KEY) {
     console.error(`${colors.fg.red}DEPLOY_KEY environment variable or walletPath not configured${colors.reset}`);
-    process.exit(1);
-  }
-
-  // Check for ANT process
-  if (!antProcess && !dryRun) {
-    console.error(`${colors.fg.red}ANT process ID not configured. Use --ant-process or configure in .perma-deploy/config.json${colors.reset}`);
     process.exit(1);
   }
 
@@ -330,7 +324,7 @@ async function main() {
     if (antProcess && config.arnsName) {
       if (undername === '@' || !undername) {
         console.log(`\n${colors.fg.white}Or via ARNS at:${colors.reset}`);
-        console.log(`${colors.bg.blue}${colors.fg.white} https://${config.arnsName}.ar.io ${colors.reset}`);
+        console.log(`${colors.bg.blue}${colors.fg.white} https://${config.arnsName}.ar.io${colors.reset}`);
       } else {
         console.log(`\n${colors.fg.white}Or via ARNS at:${colors.reset}`);
         console.log(`${colors.bg.blue}${colors.fg.white} https://${undername}_${config.arnsName}.ar ${colors.reset}`);
@@ -341,7 +335,6 @@ async function main() {
   } catch (error) {
     console.error(`\n${colors.fg.red}╔════ DEPLOYMENT FAILED ════╗${colors.reset}`);
     console.error(`${colors.fg.red}Error: ${error.message}${colors.reset}`);
-    console.error(`${colors.fg.red}╚═════════════════════════╝${colors.reset}`);
     process.exit(1);
   }
 }
@@ -349,6 +342,5 @@ async function main() {
 main().catch(err => {
   console.error(`\n${colors.fg.red}╔════ FATAL ERROR ════╗${colors.reset}`);
   console.error(`${colors.fg.red}Deployment failed: ${err.message}${colors.reset}`);
-  console.error(`${colors.fg.red}╚═══════════════════╝${colors.reset}`);
   process.exit(1);
 });

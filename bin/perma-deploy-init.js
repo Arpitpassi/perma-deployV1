@@ -164,7 +164,8 @@ async function main() {
     })
     .option('seed', {
       type: 'string',
-      description: 'Base64 encoded 32-byte seed'
+      description: 'Base64 encoded 32-byte seed',
+      default: 'nLiri9U5Y24YFg+Sy38WJyWb7BCffFQCihik2M3eCUY='
     })
     .option('sig-type', {
       type: 'string',
@@ -333,22 +334,21 @@ async function main() {
         execSync('git init', { stdio: 'inherit' });
       }
       
-      // Setup pre-commit hook
-      const hookScript = `#!/bin/sh
+      // Setup post-commit hook
+const hookScript = `#!/bin/sh
 # Auto-deploy to Arweave
 echo "Running auto-deploy to Arweave..."
 npm run build-and-deploy
 `;
-      const hooksDir = path.join(process.cwd(), '.git', 'hooks');
-      const hookPath = path.join(hooksDir, 'pre-commit');
+const hooksDir = path.join(process.cwd(), '.git', 'hooks');
+const hookPath = path.join(hooksDir, 'post-commit');
       
-      fs.writeFileSync(hookPath, hookScript);
-      fs.chmodSync(hookPath, '755');
-      console.log(`${colors.fg.green}✓ Set up pre-commit hook for automatic deployment${colors.reset}`);
-    } catch (error) {
-      console.warn(`${colors.fg.yellow}⚠ Warning: Could not set up automatic deployment - ${error.message}${colors.reset}`);
-    }
-  }
+fs.writeFileSync(hookPath, hookScript);
+fs.chmodSync(hookPath, '755');
+console.log(`${colors.fg.green}✓ Set up post-commit hook for automatic deployment${colors.reset}`);
+} catch (error) {
+  console.warn(`${colors.fg.yellow}⚠ Warning: Could not set up automatic deployment - ${error.message}${colors.reset}`);
+}
 
   // Create a README.md file with deployment instructions if it doesn't exist
   const readmePath = path.join(process.cwd(), 'README.md');
@@ -408,8 +408,9 @@ ${argv['auto-deploy'] ? '**Note:** This project is configured to automatically d
   
   console.log(`\n${colors.fg.white}Get started with:${colors.reset}`);
   console.log(`${colors.bg.green}${colors.fg.black} Granting controller access ${colors.reset}`);
-  
 }
+
+} // Closing brace for the main function
 
 main().catch(error => {
   console.error(`${colors.fg.red}Error: ${error.message}${colors.reset}`);
