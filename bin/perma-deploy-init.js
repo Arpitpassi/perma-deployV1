@@ -373,7 +373,7 @@ ${argv['auto-deploy'] ? '**Note:** This project is configured to automatically d
   if (argv['ant-process']) {
     console.log(`\n${colors.fg.white}Your app will be deployed to: https://arweave.net/[YOUR_TX_ID]${colors.reset}`);
     if (argv.arns && argv.undername) {
-      console.log(`${colors.fg.white}And will be accessible via: ${argv.undername}_${argv.arns}.ar${colors.reset}`);
+      console.log(`${colors.fg.white}And will be accessible via: ${argv.undername}_${argv.arns}.ar.io${colors.reset}`);
     } else if (argv.arns) {
       console.log(`${colors.fg.white}And will be accessible via: ${argv.arns}.ar${colors.reset}`);
     }
