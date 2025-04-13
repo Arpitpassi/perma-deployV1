@@ -1,6 +1,6 @@
 {
   "name": "nitya",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "Cli tool for permaweb deploy using Nitya.",
   "bin": {
     "perma-deploy-init": "bin/perma-deploy-init.js",
