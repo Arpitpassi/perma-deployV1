@@ -380,7 +380,7 @@ ${argv['auto-deploy'] ? '**Note:** This project is configured to automatically d
   }
   
   console.log(`\n${colors.fg.white}Get started with:${colors.reset}`);
-  console.log(`${colors.bg.green}${colors.fg.black} npm run build-and-deploy ${colors.reset}`);
+  console.log(`${colors.bg.green}${colors.fg.black} Granting controller access ${colors.reset}`);
   
 }
 
