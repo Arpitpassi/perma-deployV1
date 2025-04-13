@@ -330,7 +330,7 @@ async function main() {
     if (antProcess && config.arnsName) {
       if (undername === '@' || !undername) {
         console.log(`\n${colors.fg.white}Or via ARNS at:${colors.reset}`);
-        console.log(`${colors.bg.blue}${colors.fg.white} https://${config.arnsName}.ar ${colors.reset}`);
+        console.log(`${colors.bg.blue}${colors.fg.white} https://${config.arnsName}.ar.io ${colors.reset}`);
       } else {
         console.log(`\n${colors.fg.white}Or via ARNS at:${colors.reset}`);
         console.log(`${colors.bg.blue}${colors.fg.white} https://${undername}_${config.arnsName}.ar ${colors.reset}`);

@@ -1,6 +1,5 @@
 let generatedInitCommand = '';
 let generatedDeployCommand = '';
-let generatedWalletSeed = null;
 
 const canvas = document.getElementById('particleCanvas');
 const ctx = canvas.getContext('2d');
@@ -89,8 +88,8 @@ function stopParticleAnimation() {
 async function generateCommand() {
   try {
     const projectName = document.getElementById('projectName').value || '';
-    const installCommand = document.getElementById('installCommand').value || 'npm install perma-deployV1';
     const buildCommand = document.getElementById('buildCommand').value || 'npm run build';
+    const installCommand = document.getElementById('installCommand').value || 'npm install';
     const branch = document.getElementById('branch').value || 'main';
     const deployFolder = document.getElementById('deployFolder').value || 'dist';
     const autoDeploy = document.getElementById('autoDeploy').checked;
@@ -100,16 +99,10 @@ async function generateCommand() {
     const arnsName = document.getElementById('arnsName').value || '';
     const undername = document.getElementById('undername').value || '';
 
-    // Generate a random seed for Arweave wallet
-    let walletSeed = '';
-    if (sigType === 'arweave') {
-      const seedArray = window.crypto.getRandomValues(new Uint8Array(32));
-      walletSeed = btoa(String.fromCharCode.apply(null, seedArray));
-    }
-
     // Build the initialization command
     let initCommand = 'npx perma-deploy-init';
     if (projectName) initCommand += ` --project-name "${projectName}"`;
+    if (buildCommand) initCommand += ` --install "${installCommand}"`;
     if (buildCommand) initCommand += ` --build "${buildCommand}"`;
     if (branch) initCommand += ` --branch "${branch}"`;
     if (deployFolder) initCommand += ` --deploy-folder "${deployFolder}"`;
@@ -118,16 +111,10 @@ async function generateCommand() {
     if (arnsName) initCommand += ` --arns "${arnsName}"`;
     if (undername) initCommand += ` --undername "${undername}"`;
     if (autoDeploy) initCommand += ` --auto-deploy`;
-    if (sigType === 'arweave' && walletSeed) initCommand += ` --seed "${walletSeed}"`;
+    
 
     // Split into initialization and deployment commands
-    let initializationCommand = '';
-    if (installCommand.includes('npm install')) {
-      initializationCommand = `# Step 1: Install dependencies\n${installCommand}\n\n# Step 2: Initialize your project\n${initCommand}`;
-    } else {
-      initializationCommand = `# Step 1: Initialize your project\n${initCommand}`;
-    }
-
+    let initializationCommand = `# Step 1: Initialize your project\n${initCommand}`;
     let deploymentCommand = `# Deploy your project\nnpm run build-and-deploy`;
     if (sigType !== 'arweave') {
       deploymentCommand += `\n\n# For ${sigType} wallets, set your private key as an environment variable:\n# export DEPLOY_KEY=your_private_key_here\n# Or for Windows:\n# set DEPLOY_KEY=your_private_key_here`;
@@ -136,12 +123,11 @@ async function generateCommand() {
     // Store the commands globally
     generatedInitCommand = initializationCommand;
     generatedDeployCommand = deploymentCommand;
-    generatedWalletSeed = sigType === 'arweave' ? walletSeed : null;
+
 
     return {
       initializationCommand,
       deploymentCommand,
-      walletSeed: generatedWalletSeed
     };
   } catch (error) {
     console.error('Error generating command:', error);

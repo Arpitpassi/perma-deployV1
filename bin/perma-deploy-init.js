@@ -84,11 +84,38 @@ function makeWalletCopyable(text) {
           } else if (process.platform === 'win32') { // Windows
             execSync(`echo ${text} | clip`);
           } else { // Linux and others
-            execSync(`echo "${text}" || echo "${text}" | xsel -ib`);
+            // Check for available clipboard utilities
+            let clipboardCommand = '';
+            
+            try {
+              // Try xsel first
+              execSync('which xsel', { stdio: 'ignore' });
+              clipboardCommand = `echo "${text}" | xsel -ib`;
+            } catch {
+              try {
+                // Try xclip if xsel is not available
+                execSync('which xclip', { stdio: 'ignore' });
+                clipboardCommand = `echo "${text}" | xclip -selection clipboard`;
+              } catch {
+                try {
+                  // Try wl-copy (for Wayland)
+                  execSync('which wl-copy', { stdio: 'ignore' });
+                  clipboardCommand = `echo "${text}" | wl-copy`;
+                } catch {
+                  // No clipboard utility found
+                  throw new Error('No clipboard utility found');
+                }
+              }
+            }
+            
+            // Execute the selected clipboard command
+            execSync(clipboardCommand);
           }
           console.log(`${colors.fg.green}\nWallet address copied to clipboard!${colors.reset}`);
         } catch (err) {
-          console.log(`${colors.fg.red}Couldn't copy automatically. Please copy manually.${colors.reset}`);
+          console.log(`${colors.fg.red}Couldn't copy automatically. Please copy manually:${colors.reset}`);
+          console.log(`${colors.fg.yellow}${text}${colors.reset}`);
+          console.log(`${colors.fg.red}Tip: For Linux, install xsel, xclip, or wl-copy for clipboard support.${colors.reset}`);
         }
       }
       

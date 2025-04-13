@@ -39,27 +39,25 @@
         <input type="text" id="projectName" placeholder="Project name (optional)">
         <input type="text" id="branch" placeholder="Branch to deploy (e.g., main)">
         <input type="text" id="installCommand" placeholder="Install command (e.g., npm install)">
+        <input type="text" id="buildCommand" placeholder="Build command (e.g., npm run build)">
         <button class="wallet-btn" onclick="nextStep(0)">Next</button>
       </div>
       <div class="form-step" id="step2">
-        <input type="text" id="buildCommand" placeholder="Build command (e.g., npm run build)">
         <input type="text" id="deployFolder" placeholder="Deploy folder (e.g., dist)">
+        <label for="sigType">Wallet Type:</label>
+        <select id="sigType">
+          <option value="arweave">Arweave(More soon;D)</option>
+        </select>
         <div class="checkbox-container">
           <input type="checkbox" id="autoDeploy" checked>
           <label for="autoDeploy">Set up automatic deployment on commit</label>
         </div>
-        <button class="wallet-btn" onclick="nextStep(1)">Next</button>
         <button class="wallet-btn" onclick="goBack(1)">Back</button>
+        <button class="wallet-btn" onclick="nextStep(1)">Next</button>
       </div>
       <div class="form-step" id="step3">
-        <label for="sigType">Wallet Type:</label>
-        <select id="sigType">
-          <option value="arweave">Arweave</option>
-          <option value="ethereum">Ethereum</option>
-          <option value="polygon">Polygon</option>
-        </select>
         
-        <label for="arnsNames">Select ANT Process:</label>
+     <label for="arnsNames">Select ANT Process:</label>
         <select id="arnsNames">
           <option value="">Select an ANT Process</option>
           <!-- Will be populated with ANT processes when connected to wallet -->
