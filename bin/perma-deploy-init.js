@@ -7,8 +7,108 @@ const yargs = require('yargs');
 const { hideBin } = require('yargs/helpers');
 const Arweave = require('arweave');
 const { execSync } = require('child_process');
+const readline = require('readline');
+
+// ANSI colors and styling for terminal output
+const colors = {
+  reset: "\x1b[0m",
+  bright: "\x1b[1m",
+  dim: "\x1b[2m",
+  
+  fg: {
+    black: "\x1b[30m",
+    red: "\x1b[31m",
+    green: "\x1b[32m",
+    yellow: "\x1b[33m",
+    blue: "\x1b[34m",
+    magenta: "\x1b[35m",
+    cyan: "\x1b[36m",
+    white: "\x1b[37m"
+  },
+  bg: {
+    black: "\x1b[40m",
+    red: "\x1b[41m",
+    green: "\x1b[42m",
+    yellow: "\x1b[43m",
+    blue: "\x1b[44m",
+    magenta: "\x1b[45m",
+    cyan: "\x1b[46m",
+    white: "\x1b[47m"
+  }
+};
+
+function printTitle() {
+  console.log(`${colors.fg.magenta}
+    ███╗   ██╗██╗████████╗██╗   ██╗ █████╗ 
+    ████╗  ██║██║╚══██╔══╝╚██╗ ██╔╝██╔══██╗
+    ██╔██╗ ██║██║   ██║    ╚████╔╝ ███████║
+    ██║╚██╗██║██║   ██║     ╚██╔╝  ██╔══██║
+    ██║ ╚████║██║   ██║      ██║   ██║  ██║
+    ╚═╝  ╚═══╝╚═╝   ╚═╝      ╚═╝   ╚═╝  ╚═╝
+                                                                      
+    ${colors.fg.white}> Permanently deploy your web apps to the decentralized Arweave network${colors.reset}
+    ${colors.fg.cyan}    
+    ┌────┐        ┌────┐
+    │${colors.fg.blue}████${colors.fg.cyan}│━━━━━━━━│${colors.fg.blue}████${colors.fg.cyan}│     ${colors.fg.white}PERMANENT DEPLOYMENT${colors.fg.cyan}
+    └────┘╲      ╱└────┘     ${colors.fg.white}DECENTRALIZED${colors.fg.cyan}
+           ╲    ╱
+            ╲  ╱
+           ┌────┐
+           │${colors.fg.blue}████${colors.fg.cyan}│
+           └────┘
+         
+`);
+}
+// Function to make wallet address copyable
+function makeWalletCopyable(text) {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+  
+  console.log(`\n${colors.bg.black}${colors.fg.white} ${text} ${colors.reset}`);
+  console.log(`${colors.fg.yellow}Press 'c' to copy wallet address to clipboard, any other key to continue...${colors.reset}`);
+  
+  return new Promise(resolve => {
+    process.stdin.setRawMode(true);
+    process.stdin.once('data', (data) => {
+      const key = data.toString().toLowerCase();
+      process.stdin.setRawMode(false);
+      rl.close();
+      
+      if (key === 'c') {
+        try {
+          // Different copy commands based on OS
+          if (process.platform === 'darwin') { // macOS
+            execSync(`echo "${text}" | pbcopy`);
+          } else if (process.platform === 'win32') { // Windows
+            execSync(`echo ${text} | clip`);
+          } else { // Linux and others
+            execSync(`echo "${text}" || echo "${text}" | xsel -ib`);
+          }
+          console.log(`${colors.fg.green}\nWallet address copied to clipboard!${colors.reset}`);
+        } catch (err) {
+          console.log(`${colors.fg.red}Couldn't copy automatically. Please copy manually.${colors.reset}`);
+        }
+      }
+      
+      resolve();
+    });
+  });
+}
+
+// Progress bar for visual feedback
+function progressBar(percent, width = 30) {
+  const filled = Math.round(width * (percent / 100));
+  const empty = width - filled;
+  const bar = `${colors.fg.green}[${'█'.repeat(filled)}${colors.fg.red}${' '.repeat(empty)}] ${percent.toFixed(0)}%${colors.reset}`;
+  process.stdout.write(`\r${bar}`);
+  if (percent === 100) process.stdout.write('\n');
+}
 
 async function main() {
+  printTitle();
+
   const argv = yargs(hideBin(process.argv))
     .option('project-name', {
       type: 'string',
@@ -33,7 +133,7 @@ async function main() {
     })
     .option('ant-process', {
       type: 'string',
-      description: 'ANT process ID (e.g., SvcHmgBgdRi4mAAcpw4zVcHnhyWGOyZWIMM3c1ABaEA)'
+      description: 'ANT process ID'
     })
     .option('seed', {
       type: 'string',
@@ -66,13 +166,31 @@ async function main() {
   const projectName = argv['project-name'];
   const sigType = argv['sig-type'];
 
+  console.log(`\n${colors.bright}${colors.fg.yellow}╔════ PROJECT CONFIGURATION ════╗${colors.reset}`);
+  console.log(`${colors.fg.cyan}● Project:${colors.reset} ${projectName}`);
+  console.log(`${colors.fg.cyan}● Signer Type:${colors.reset} ${sigType}`);
+  console.log(`${colors.fg.cyan}● Deploy Folder:${colors.reset} ${argv['deploy-folder'] || 'dist'}`);
+  
+  if (argv.build) console.log(`${colors.fg.cyan}● Build Command:${colors.reset} ${argv.build}`);
+  if (argv.branch) console.log(`${colors.fg.cyan}● Deploy Branch:${colors.reset} ${argv.branch}`);
+  if (argv.arns) console.log(`${colors.fg.cyan}● ARNS Name:${colors.reset} ${argv.arns}`);
+  if (argv.undername) console.log(`${colors.fg.cyan}● Undername:${colors.reset} ${argv.undername}`);
+  if (argv['ant-process']) console.log(`${colors.fg.cyan}● ANT Process:${colors.reset} ${argv['ant-process']}`);
+
+
   // Define the .permaweb directory in the home directory
   const permawebDir = path.join(os.homedir(), '.permaweb');
-  if (!fs.existsSync(permawebDir)) fs.mkdirSync(permawebDir);
+  if (!fs.existsSync(permawebDir)) {
+    console.log(`${colors.fg.blue}Creating directory:${colors.reset} ${permawebDir}`);
+    fs.mkdirSync(permawebDir);
+  }
 
   // Define the project-specific directory inside .permaweb
   const projectDir = path.join(permawebDir, projectName);
-  if (!fs.existsSync(projectDir)) fs.mkdirSync(projectDir);
+  if (!fs.existsSync(projectDir)) {
+    console.log(`${colors.fg.blue}Creating project directory:${colors.reset} ${projectDir}`);
+    fs.mkdirSync(projectDir);
+  }
 
   // Define the wallet path inside the project directory
   const walletPath = path.join(projectDir, 'wallet.json');
@@ -81,14 +199,24 @@ async function main() {
   
   // Handle wallet creation based on sig-type
   if (sigType === 'arweave') {
+    console.log(`\n${colors.bright}${colors.fg.yellow}╔════ CREATING ARWEAVE WALLET ════╗${colors.reset}`);
+    
     // Validate base64 seed
     let seedBuffer;
     try {
       seedBuffer = Buffer.from(argv.seed, 'base64');
       if (seedBuffer.length !== 32) throw new Error('Seed must be 32 bytes.');
     } catch (error) {
-      console.error(`Error: Invalid base64 seed - ${error.message}`);
+      console.error(`${colors.fg.red}✗ Error: Invalid base64 seed - ${error.message}${colors.reset}`);
       process.exit(1);
+    }
+
+    // Show wallet generation progress
+    console.log(`${colors.fg.blue}Generating wallet...${colors.reset}`);
+    
+    for (let i = 0; i <= 100; i += 10) {
+      progressBar(i);
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
 
     // Initialize Arweave
@@ -98,18 +226,28 @@ async function main() {
 
     // Save wallet to ~/.permaweb/<project-name>/wallet.json
     fs.writeFileSync(walletPath, JSON.stringify(wallet, null, 2));
-    console.log(`Arweave wallet saved to: ${walletPath}`);
-    console.log(`Wallet address: ${walletAddress}`);
-    console.log('Make sure to fund this wallet with AR or Turbo credits before deployment if the file size is greater that 100kb.');
+    console.log(`\n${colors.fg.green}✓ Arweave wallet saved to:${colors.reset} ${walletPath}`);
+  
+
+    // Make wallet address copyable
+    console.log(`\n${colors.bright}${colors.fg.yellow}╔════ WALLET ADDRESS ════╗${colors.reset}`);
+    await makeWalletCopyable(walletAddress);
+    console.log(`${colors.fg.green}ℹ Make sure to fund this wallet with AR or Turbo credits before deployment if the file size is greater than 100kb.${colors.reset}`);
+   
   } else {
-    console.log(`Using ${sigType} wallet for deployment. No wallet file needed.`);
-    console.log('You will need to set the DEPLOY_KEY environment variable with your private key.');
-    console.log('For Ethereum/Polygon wallets, provide the raw private key without encoding.');
+    console.log(`\n${colors.bright}${colors.fg.yellow}╔════ ${sigType.toUpperCase()} WALLET SETUP ════╗${colors.reset}`);
+    console.log(`${colors.fg.blue}ℹ Using ${sigType} wallet for deployment. No wallet file needed.${colors.reset}`);
+    console.log(`${colors.fg.green}ℹ You will need to set the DEPLOY_KEY environment variable with your private key.${colors.reset}`);
+    console.log(`${colors.fg.green}ℹ For ${sigType} wallets, provide the raw private key without encoding.${colors.reset}`);
+
   }
 
   // Create .perma-deploy directory if it doesn't exist
   const permaDeployDir = path.join(process.cwd(), '.perma-deploy');
-  if (!fs.existsSync(permaDeployDir)) fs.mkdirSync(permaDeployDir);
+  if (!fs.existsSync(permaDeployDir)) {
+    console.log(`${colors.fg.blue}Creating .perma-deploy directory...${colors.reset}`);
+    fs.mkdirSync(permaDeployDir);
+  }
 
   // Save config
   const config = {
@@ -124,12 +262,16 @@ async function main() {
     sigType,
     walletAddress
   };
+  
+  console.log(`${colors.fg.blue}Saving configuration...${colors.reset}`);
   fs.writeFileSync(path.join(permaDeployDir, 'config.json'), JSON.stringify(config, null, 2));
-
+  
   // Create deploy script in package.json
   try {
     const packageJsonPath = path.join(process.cwd(), 'package.json');
     if (fs.existsSync(packageJsonPath)) {
+      console.log(`${colors.fg.blue}Updating package.json with deploy scripts...${colors.reset}`);
+      
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
       
       // Add deploy script
@@ -149,10 +291,10 @@ async function main() {
       packageJson.scripts['build-and-deploy'] = `${argv.build || 'npm run build'} && npm run deploy`;
       
       fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
-      console.log('Added deploy scripts to package.json');
+      console.log(`${colors.fg.green}✓ Added deploy scripts to package.json${colors.reset}`);
     }
   } catch (error) {
-    console.warn(`Warning: Could not update package.json - ${error.message}`);
+    console.warn(`${colors.fg.yellow}⚠ Warning: Could not update package.json - ${error.message}${colors.reset}`);
   }
 
   // Set up automatic deployment
@@ -160,7 +302,7 @@ async function main() {
     try {
       // Check if git is initialized
       if (!fs.existsSync(path.join(process.cwd(), '.git'))) {
-        console.log('Initializing git repository...');
+        console.log(`${colors.fg.blue}Initializing git repository...${colors.reset}`);
         execSync('git init', { stdio: 'inherit' });
       }
       
@@ -175,15 +317,17 @@ npm run build-and-deploy
       
       fs.writeFileSync(hookPath, hookScript);
       fs.chmodSync(hookPath, '755');
-      console.log('Set up pre-commit hook for automatic deployment');
+      console.log(`${colors.fg.green}✓ Set up pre-commit hook for automatic deployment${colors.reset}`);
     } catch (error) {
-      console.warn(`Warning: Could not set up automatic deployment - ${error.message}`);
+      console.warn(`${colors.fg.yellow}⚠ Warning: Could not set up automatic deployment - ${error.message}${colors.reset}`);
     }
   }
 
   // Create a README.md file with deployment instructions if it doesn't exist
   const readmePath = path.join(process.cwd(), 'README.md');
   if (!fs.existsSync(readmePath)) {
+    console.log(`${colors.fg.blue}Creating README.md with deployment instructions...${colors.reset}`);
+    
     const readmeContent = `# ${projectName}
 
 ## Deployment Information
@@ -220,26 +364,27 @@ ${argv['ant-process'] ? `- ANT process: ${argv['ant-process']}` : ''}
 ${argv['auto-deploy'] ? '**Note:** This project is configured to automatically deploy on every commit.' : ''}
 `;
     fs.writeFileSync(readmePath, readmeContent);
-    console.log('Created README.md with deployment instructions');
+    console.log(`${colors.fg.green}✓ Created README.md with deployment instructions${colors.reset}`);
   }
 
-  console.log('\nSetup complete!');
-  console.log('Config saved to:', path.join(permaDeployDir, 'config.json'));
+  console.log(`\n${colors.bright}${colors.fg.green}╔════ SETUP COMPLETE! ════╗${colors.reset}`);
+  console.log(`${colors.fg.white}● Config saved to: ${path.join(permaDeployDir, 'config.json')}${colors.reset}`);
   
   if (argv['ant-process']) {
-    console.log(`\nYour app will be deployed to: https://arweave.net/[YOUR_TX_ID]`);
+    console.log(`\n${colors.fg.white}Your app will be deployed to: https://arweave.net/[YOUR_TX_ID]${colors.reset}`);
     if (argv.arns && argv.undername) {
-      console.log(`And will be accessible via: ${argv.undername}_${argv.arns}.ar`);
+      console.log(`${colors.fg.white}And will be accessible via: ${argv.undername}_${argv.arns}.ar${colors.reset}`);
     } else if (argv.arns) {
-      console.log(`And will be accessible via: ${argv.arns}.ar`);
+      console.log(`${colors.fg.white}And will be accessible via: ${argv.arns}.ar${colors.reset}`);
     }
   }
   
-  console.log('\nGet started with:');
-  console.log('npm run build-and-deploy');
+  console.log(`\n${colors.fg.white}Get started with:${colors.reset}`);
+  console.log(`${colors.bg.green}${colors.fg.black} npm run build-and-deploy ${colors.reset}`);
+  
 }
 
 main().catch(error => {
-  console.error(`Error: ${error.message}`);
+  console.error(`${colors.fg.red}Error: ${error.message}${colors.reset}`);
   process.exit(1);
 });
