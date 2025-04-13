@@ -239,6 +239,20 @@
   <script src="src/index.js"></script>
   <script src="src/indexx.js"></script>
   
+  <!-- Added script for Help Section functionality -->
+  <script>
+  
+  function closeWindow(id) {
+    const element = document.getElementById(id);
+    if (element) {
+      element.style.display = 'none';
+      document.body.classList.remove('blur-background');
+    }
+  }
 
+
+  // This function already exists in your JS, but adding here to ensure functionality
+  // if it's not already defined in index.js or indexx.js
+  </script>
 </body>
 </html>
