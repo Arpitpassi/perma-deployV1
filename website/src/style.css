@@ -74,7 +74,7 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      font-size: 10vw;
+      font-size: 8vw;
       text-transform: uppercase;
       letter-spacing: 10px;
       text-align: center;
@@ -559,3 +559,202 @@
   display: block;
 }
 
+/* Help Section Styles - Add to your existing CSS file */
+.help-section {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  max-width: 800px;
+  max-height: 90vh;
+  background-color: var(--terminal-bg);
+  border: 2px solid var(--terminal-border);
+  padding: 20px;
+  z-index: 15;
+  overflow-y: auto;
+  display: none;
+  color: #fff;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.light-mode .help-section {
+  background: var(--light-bg);
+  border: 2px solid var(--light-border);
+  color: var(--light-text);
+}
+
+.help-section h2 {
+  text-align: center;
+  margin-bottom: 25px;
+  font-size: 24px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: #ffb7c5;
+  border-bottom: 2px solid #ffb7c5;
+  padding-bottom: 10px;
+}
+
+.light-mode .help-section h2 {
+  color: var(--light-accent);
+  border-bottom: 2px solid var(--light-accent);
+}
+
+.setup-step {
+  display: flex;
+  margin-bottom: 25px;
+  align-items: flex-start;
+}
+
+.step-number {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: #2d2d3a;
+  border: 2px solid #ffb7c5;
+  color: #ffb7c5;
+  font-weight: bold;
+  margin-right: 15px;
+  flex-shrink: 0;
+}
+
+.light-mode .step-number {
+  background-color: var(--light-bg);
+  border: 2px solid var(--light-accent);
+  color: var(--light-accent);
+}
+
+.step-content {
+  flex: 1;
+}
+
+.step-content h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  color: #ffcad4;
+  font-size: 18px;
+  text-transform: uppercase;
+}
+
+.light-mode .step-content h3 {
+  color: var(--light-accent);
+}
+
+.step-content p {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #d8d8e6;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.light-mode .step-content p {
+  color: var(--light-text);
+}
+
+/* Terminal styling */
+.terminal-container {
+  width: 100%;
+  margin-bottom: 10px;
+  border: 2px solid #ffb7c5;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  overflow: hidden;
+}
+
+.light-mode .terminal-container {
+  border: 2px solid var(--light-border);
+}
+
+.terminal-header {
+  height: 25px;
+  background-color: #333342;
+  border-bottom: 2px solid #ffb7c5;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  position: relative;
+}
+
+.light-mode .terminal-header {
+  background-color: var(--light-bg);
+  border-bottom: 2px solid var(--light-border);
+}
+
+.terminal-button {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 5px;
+}
+
+.terminal-button:nth-child(1) {
+  background-color: #ff9a9a;
+}
+
+.terminal-button:nth-child(2) {
+  background-color: #ffdf9e;
+}
+
+.terminal-button:nth-child(3) {
+  background-color: #9effb9;
+}
+
+.light-mode .terminal-button:nth-child(1) {
+  background-color: #FF6B6B;
+}
+
+.light-mode .terminal-button:nth-child(2) {
+  background-color: #FFD166;
+}
+
+.light-mode .terminal-button:nth-child(3) {
+  background-color: #06D6A0;
+}
+
+.terminal-title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #ffd6dd;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.light-mode .terminal-title {
+  color: var(--light-accent);
+}
+
+.terminal-body {
+  background-color: #2a2a38;
+  color: #d8d8e6;
+  padding: 12px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  line-height: 1.5;
+}
+
+.light-mode .terminal-body {
+  background-color: var(--light-bg);
+  color: var(--light-text);
+}
+
+.terminal-prompt {
+  color: #ffb7c5;
+  margin-right: 8px;
+}
+
+.light-mode .terminal-prompt {
+  color: var(--light-accent);
+}
+
+/* Help button */
+.help-button {
+  position: absolute;
+  top: 20px;
+  right: 1000px;
+  z-index: 5;
+}
