@@ -151,6 +151,14 @@ async function generateCommand() {
   }
 }
 
+
+async function showHelpSection() {
+  const helpSection = document.getElementById('helpSection');
+  if (helpSection) {
+    helpSection.style.display = 'block';
+    document.body.classList.add('blur-background');
+  }
+}
 // Generate and show initialization command
 async function generateAndShowInitCommand() {
   const commands = await generateCommand();
