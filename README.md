@@ -69,7 +69,7 @@ Open http://localhost:3000 in your browser (assumes you have a basic Node.js ser
 1. Copy the Initialization Command from the output. Example:
 
 ```bash
-npm install nitya
+npm install nitya@0.0.11
 npx perma-deploy-init --project-name "my-project" --build "npm run build" --branch "main" --deploy-folder "dist" --auto-deploy 
 ```
 
@@ -105,7 +105,7 @@ npm run perma-deploy-deploy
 
 ### 6. Automatic Deployment (Optional)
 
-If you enabled Auto-Deploy, every git commit on the specified branch will trigger:
+If you enabled Auto-Deploy, every git commit on the specified branch wilnitya@0.0.11l trigger:
 
 ```bash
 npm run perma-deploy-deploy
