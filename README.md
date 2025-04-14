@@ -27,7 +27,7 @@ Before using Nitya, ensure you have:
 ### 1. Access the Application
 
 **Option A: Hosted Version**
-Visit the hosted version at [Insert hosted URL here, e.g., https://Nitya.arweave.app] (if applicable).
+Visit the hosted version at [Insert hosted URL here, e.g., https://nitya_enginesoup.ar.io] (if applicable).
 
 **Option B: Run Locally**
 Clone the repository and serve the application locally:
