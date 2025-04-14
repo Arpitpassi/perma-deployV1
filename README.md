@@ -33,7 +33,7 @@ Visit the hosted version at [Insert hosted URL here, e.g., https://nitya_engines
 Clone the repository and serve the application locally:
 
 ```bash
-git clone https://github.com/[your-username]/Nitya.git
+git clone https://github.com/Arpitpassi/Nitya(formerly anantweb).git
 cd Nitya
 npm install
 npm start
@@ -69,8 +69,8 @@ Open http://localhost:3000 in your browser (assumes you have a basic Node.js ser
 1. Copy the Initialization Command from the output. Example:
 
 ```bash
-npm install perma-deployV1
-npx perma-deploy-init --project-name "my-project" --build "npm run build" --branch "main" --deploy-folder "dist" --auto-deploy --seed "your-base64-seed"
+npm install nitya
+npx perma-deploy-init --project-name "my-project" --build "npm run build" --branch "main" --deploy-folder "dist" --auto-deploy 
 ```
 
 2. Run the command in your project's root directory.
@@ -91,7 +91,7 @@ npx perma-deploy-init --project-name "my-project" --build "npm run build" --bran
 1. Copy the Deploy Command from the output. Example:
 
 ```bash
-npm run build-and-deploy
+npm run perma-deploy-deploy
 ```
 
 2. Run the command in your project directory.
@@ -108,7 +108,7 @@ npm run build-and-deploy
 If you enabled Auto-Deploy, every git commit on the specified branch will trigger:
 
 ```bash
-npm run build-and-deploy
+npm run perma-deploy-deploy
 ```
 
 Ensure your project wallet is funded to avoid failed deployments.
