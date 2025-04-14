@@ -187,7 +187,7 @@ Please include tests and update documentation as needed.
 
 ## License
 
-This project is licensed under the [License type to be added].
+This project is licensed under the MIT license.
 
 ## Acknowledgements
 
