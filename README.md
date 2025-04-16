@@ -1,4 +1,4 @@
-# ANANTWEB - Deploy to Arweave
+# Anantweb - Deploy to Arweave
 
 A web-based tool to simplify deploying projects to the Arweave permaweb. This application provides an intuitive interface for configuring projects, generating deployment commands, and managing Arweave wallets and ARNS (Arweave Name System) processes.
 
