@@ -187,7 +187,7 @@ Please include tests and update documentation as needed.
 
 ## License
 
-This project is licensed under the MIT license.
+This project is licensed under the GNU Affero General Public License v3.0
 
 ## Acknowledgements
 
